@@ -15,6 +15,7 @@ export default function AnalysisScreen() {
     try {
       setLoading(true);
       setError(null);
+      console.log('Starting file selection...');
 
       // Open document picker for FIT files
       const result = await DocumentPicker.getDocumentAsync({
@@ -22,12 +23,16 @@ export default function AnalysisScreen() {
         copyToCacheDirectory: true,
       });
 
+      console.log('Document picker result:', result);
+
       if (result.canceled) {
+        console.log('File selection canceled');
         setLoading(false);
         return;
       }
 
       const file = result.assets[0];
+      console.log('Selected file:', file.name, 'Size:', file.size);
       
       // Validate file extension
       if (!file.name.toLowerCase().endsWith('.fit')) {
@@ -39,13 +44,18 @@ export default function AnalysisScreen() {
         return;
       }
 
+      console.log('Reading file as base64...');
       // Read file as base64
       const base64Data = await FileSystem.readAsStringAsync(file.uri, {
         encoding: FileSystem.EncodingType.Base64,
       });
 
+      console.log('File read successfully, length:', base64Data.length);
+      console.log('Parsing FIT file...');
+
       // Parse FIT file
       const parsedData = await FitFileParser.parseFitFile(base64Data);
+      console.log('FIT file parsed successfully:', Object.keys(parsedData));
       
       // Extract data
       const cadenceData = FitFileParser.extractCadenceData(parsedData);
@@ -141,6 +151,91 @@ export default function AnalysisScreen() {
     return recommendations;
   };
 
+  const handleTestData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      console.log('Creating test data...');
+
+      // Create mock analysis results to test the UI
+      const mockResults = {
+        fileName: 'test_run.fit',
+        fileSize: 125000,
+        runSummary: {
+          totalDistance: 10500, // 10.5km
+          totalTime: 3150, // 52:30
+          avgSpeed: 3.33, // m/s
+          maxSpeed: 4.2,
+          avgCadence: 172,
+          minCadence: 158,
+          maxCadence: 186,
+          cadenceVariability: 12,
+          avgHeartRate: 165,
+          maxHeartRate: 182,
+          totalAscent: 85,
+          totalDescent: 92,
+          deviceInfo: {
+            manufacturer: 'Garmin',
+            product: 'Forerunner 945',
+          },
+          dataPoints: {
+            cadence: 1890,
+            speed: 1890,
+            heartRate: 1890,
+            gps: 1890,
+          },
+        },
+        cadenceZones: {
+          optimal: 68,
+          subOptimal: 32,
+          zones: {
+            veryLow: 5,
+            low: 27,
+            optimal: 68,
+            high: 0,
+            veryHigh: 0,
+          },
+        },
+        recommendations: [
+          {
+            type: 'success',
+            title: 'Great Cadence!',
+            message: 'Your average cadence of 172 SPM is in the optimal range.',
+          },
+          {
+            type: 'improvement',
+            title: 'Consistency Opportunity',
+            message: 'Only 68% of your run was in the optimal cadence zone. Focus on maintaining 170-180 SPM.',
+          },
+        ],
+        dataQuality: {
+          hasCadence: true,
+          hasSpeed: true,
+          hasHeartRate: true,
+          hasGPS: true,
+        },
+        rawDataCounts: {
+          cadence: 1890,
+          speed: 1890,
+          heartRate: 1890,
+          gps: 1890,
+        },
+      };
+
+      // Save test analysis
+      await saveAnalysis(mockResults);
+      
+      setResults(mockResults);
+      setLoading(false);
+      console.log('Test data created successfully');
+
+    } catch (err) {
+      console.error('Error creating test data:', err);
+      setError(err.message);
+      setLoading(false);
+    }
+  };
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.section}>
@@ -159,6 +254,14 @@ export default function AnalysisScreen() {
           ) : (
             <Text style={styles.uploadButtonText}>📁 Select FIT File</Text>
           )}
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={[styles.uploadButton, { backgroundColor: '#FF9800', marginTop: 12 }]}
+          onPress={handleTestData}
+          disabled={loading}
+        >
+          <Text style={styles.uploadButtonText}>🧪 Test with Sample Data</Text>
         </TouchableOpacity>
       </View>
 

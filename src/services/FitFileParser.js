@@ -11,8 +11,11 @@ export class FitFileParser {
    */
   static async parseFitFile(base64Data) {
     try {
+      console.log('FitFileParser: Starting parse, data length:', base64Data.length);
+      
       // Convert base64 to buffer
       const buffer = Buffer.from(base64Data, 'base64');
+      console.log('FitFileParser: Buffer created, size:', buffer.length);
       
       // Initialize FIT parser
       const fitParser = new FitParser({
@@ -24,8 +27,11 @@ export class FitFileParser {
         mode: 'list',
       });
 
+      console.log('FitFileParser: Parser initialized, starting parse...');
+      
       // Parse the FIT file
       const parsedData = fitParser.parse(buffer);
+      console.log('FitFileParser: Parse complete, keys:', Object.keys(parsedData));
 
       return {
         records: parsedData.records || [],
