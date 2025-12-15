@@ -46,41 +46,25 @@ export class MetronomeService {
    */
   async loadSounds() {
     try {
-      // Create different metronome sounds using Audio.Sound
-      const soundConfigs = {
-        click: { frequency: 800, duration: 100 },
-        beep: { frequency: 1000, duration: 150 },
-        tick: { frequency: 600, duration: 80 },
-        wood: { frequency: 400, duration: 120 },
-      };
-
-      // For now, we'll use a simple beep sound
-      // In a real app, you'd load actual audio files
-      this.sounds = {
-        normal: await Audio.Sound.createAsync(
-          { uri: this.generateBeepDataUri(800, 100) },
-          { volume: this.volume }
-        ),
-        accent: await Audio.Sound.createAsync(
-          { uri: this.generateBeepDataUri(1200, 150) },
-          { volume: this.volume }
-        ),
-      };
+      // Use Web Audio API for web, simple approach for mobile
+      if (typeof window !== 'undefined' && window.AudioContext) {
+        // Web platform - use Web Audio API
+        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        this.sounds = {
+          normal: { frequency: 800, duration: 0.1 },
+          accent: { frequency: 1200, duration: 0.15 },
+        };
+      } else {
+        // Mobile platform - we'll use a different approach
+        console.log('Mobile platform detected - using alternative audio method');
+        this.sounds = {
+          normal: { frequency: 800, duration: 0.1 },
+          accent: { frequency: 1200, duration: 0.15 },
+        };
+      }
     } catch (error) {
       console.error('Failed to load sounds:', error);
     }
-  }
-
-  /**
-   * Generate a simple beep sound as data URI
-   * @param {number} frequency - Frequency in Hz
-   * @param {number} duration - Duration in ms
-   * @returns {string} Data URI for the sound
-   */
-  generateBeepDataUri(frequency, duration) {
-    // This is a simplified approach - in production you'd use actual audio files
-    // For now, we'll use a placeholder that works with expo-av
-    return 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT';
   }
 
   /**
@@ -147,15 +131,56 @@ export class MetronomeService {
       if (!this.isInitialized || !this.audioEnabled) return;
 
       const soundKey = isAccent ? 'accent' : 'normal';
-      const sound = this.sounds[soundKey];
+      const soundConfig = this.sounds[soundKey];
 
-      if (sound && sound.sound) {
-        // Reset position and play
-        await sound.sound.setPositionAsync(0);
-        await sound.sound.playAsync();
+      if (this.audioContext) {
+        // Web Audio API approach
+        this.playWebAudioBeep(soundConfig.frequency, soundConfig.duration);
+      } else {
+        // Mobile approach - use console for now, will implement native audio later
+        console.log(isAccent ? 'TICK (accent)' : 'tick');
+        
+        // Try to use device vibration as feedback on mobile
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+          navigator.vibrate(isAccent ? 100 : 50);
+        }
       }
     } catch (error) {
       console.error('Error playing sound:', error);
+    }
+  }
+
+  /**
+   * Play beep using Web Audio API
+   * @param {number} frequency - Frequency in Hz
+   * @param {number} duration - Duration in seconds
+   */
+  playWebAudioBeep(frequency, duration) {
+    try {
+      if (!this.audioContext) return;
+
+      // Create oscillator
+      const oscillator = this.audioContext.createOscillator();
+      const gainNode = this.audioContext.createGain();
+
+      // Connect nodes
+      oscillator.connect(gainNode);
+      gainNode.connect(this.audioContext.destination);
+
+      // Configure oscillator
+      oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+      oscillator.type = 'sine';
+
+      // Configure gain (volume envelope)
+      gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+      gainNode.gain.linearRampToValueAtTime(this.volume * 0.3, this.audioContext.currentTime + 0.01);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
+
+      // Play sound
+      oscillator.start(this.audioContext.currentTime);
+      oscillator.stop(this.audioContext.currentTime + duration);
+    } catch (error) {
+      console.error('Error playing web audio beep:', error);
     }
   }
 
@@ -165,17 +190,7 @@ export class MetronomeService {
    */
   async setVolume(volume) {
     this.volume = Math.max(0, Math.min(1, volume));
-    
-    try {
-      if (this.sounds.normal && this.sounds.normal.sound) {
-        await this.sounds.normal.sound.setVolumeAsync(this.volume);
-      }
-      if (this.sounds.accent && this.sounds.accent.sound) {
-        await this.sounds.accent.sound.setVolumeAsync(this.volume);
-      }
-    } catch (error) {
-      console.error('Error setting volume:', error);
-    }
+    // Volume is now handled in the playWebAudioBeep method
   }
 
   /**
@@ -217,14 +232,12 @@ export class MetronomeService {
     this.stop();
     
     try {
-      if (this.sounds.normal && this.sounds.normal.sound) {
-        await this.sounds.normal.sound.unloadAsync();
-      }
-      if (this.sounds.accent && this.sounds.accent.sound) {
-        await this.sounds.accent.sound.unloadAsync();
+      if (this.audioContext) {
+        await this.audioContext.close();
+        this.audioContext = null;
       }
     } catch (error) {
-      console.error('Error cleaning up sounds:', error);
+      console.error('Error cleaning up audio context:', error);
     }
     
     this.isInitialized = false;

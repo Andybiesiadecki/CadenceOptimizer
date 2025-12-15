@@ -94,6 +94,8 @@ export default function MetronomeScreen() {
     MetronomeService.setAudioEnabled(newAudioEnabled);
   };
 
+
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.section}>
