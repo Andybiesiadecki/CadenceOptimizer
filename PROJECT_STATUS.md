@@ -56,6 +56,7 @@ The app has a complete skeleton with:
 5. **Runner Profile Setup** - Need to create profile input flow
 6. **Terrain Detection** - Real-time GPS-based cadence adjustments
 7. **Advanced Metronome Modes** - Interval, progressive, terrain-adaptive
+8. **🎵 Smart Music Integration** - Connect to music apps and match songs to target cadence
 
 ## How to Resume Development
 

@@ -107,27 +107,68 @@
 - [ ] Identify patterns across runs
 - [ ] Export data as CSV
 
-## Phase 8: Advanced Features
+## Phase 8: Smart Music Integration 🎵
 
-### 8.1 Device Integration
+### 8.1 Music Library Analysis
+- [ ] Connect to device music library (iOS Music, Spotify, etc.)
+- [ ] Analyze BPM (beats per minute) of user's songs
+- [ ] Build database of song tempos and metadata
+- [ ] Cache BPM analysis for performance
+
+### 8.2 Cadence-Music Matching Algorithm
+- [ ] Match target cadence (SPM) to song BPM
+- [ ] Account for 2:1 ratio (180 SPM = 90 BPM songs)
+- [ ] Create tolerance ranges (±5 BPM flexibility)
+- [ ] Prioritize user's favorite genres/artists
+
+### 8.3 Smart Playlist Generation
+- [ ] Auto-generate playlists for target cadence
+- [ ] "Warm-up" songs (slower tempo)
+- [ ] "Main workout" songs (target tempo)
+- [ ] "Cool-down" songs (slower tempo)
+- [ ] Save and share custom cadence playlists
+
+### 8.4 Real-Time Music Coaching
+- [ ] Suggest songs during runs based on current cadence
+- [ ] Seamless handoff between metronome and music
+- [ ] "Music mode" vs "Metronome mode" toggle
+- [ ] Visual indicators when song matches cadence perfectly
+
+### 8.5 Music Platform Integration
+- [ ] Spotify API integration for streaming
+- [ ] Apple Music integration (iOS)
+- [ ] YouTube Music support
+- [ ] Local music library access
+- [ ] Cross-platform playlist sync
+
+### 8.6 Advanced Music Features
+- [ ] Tempo adjustment (speed up/slow down songs slightly)
+- [ ] Beat detection and visualization
+- [ ] Song recommendations based on running performance
+- [ ] "Power songs" for interval training
+- [ ] Mood-based music selection
+
+## Phase 9: Advanced Features
+
+### 9.1 Device Integration
 - [ ] Bluetooth heart rate monitor support
 - [ ] GPS watch connectivity
 - [ ] Real-time data streaming
 - [ ] Device synchronization
 
-### 8.2 Social Features
+### 9.2 Social Features
 - [ ] Share achievements
 - [ ] Compare with similar runners
 - [ ] Group training sessions
 - [ ] Leaderboards
 
-### 8.3 AI Recommendations
+### 9.3 AI Recommendations
 - [ ] Machine learning from patterns
 - [ ] Predictive cadence adjustments
 - [ ] Injury prevention insights
 - [ ] Personalized training suggestions
 
-## Phase 9: Polish & Optimization
+## Phase 10: Polish & Optimization
 
 ### 9.1 UI/UX Improvements
 - [ ] Add animations and transitions
@@ -147,7 +188,7 @@
 - [ ] E2E testing with Detox
 - [ ] Beta testing with real users
 
-## Phase 10: Launch Preparation
+## Phase 11: Launch Preparation
 
 ### 10.1 App Store Preparation
 - [ ] Create app icons and splash screens
