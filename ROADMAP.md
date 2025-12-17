@@ -116,9 +116,9 @@
 - [ ] Cache BPM analysis for performance
 
 ### 8.2 Cadence-Music Matching Algorithm
-- [ ] Match target cadence (SPM) to song BPM
-- [ ] Account for 2:1 ratio (180 SPM = 90 BPM songs)
-- [ ] Create tolerance ranges (±5 BPM flexibility)
+- [ ] Match target cadence (SPM) to song BPM (1:1 ratio - 180 SPM = 180 BPM)
+- [ ] Support multiple matching ratios (1:1, 2:1, 1:2 for flexibility)
+- [ ] Create tolerance ranges (±5-10 BPM flexibility)
 - [ ] Prioritize user's favorite genres/artists
 
 ### 8.3 Smart Playlist Generation
