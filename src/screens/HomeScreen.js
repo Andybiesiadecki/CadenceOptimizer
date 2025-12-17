@@ -1,7 +1,26 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { getRunnerProfile } from '../utils/storage';
 
 export default function HomeScreen({ navigation }) {
+  const [hasProfile, setHasProfile] = useState(false);
+  const [profile, setProfile] = useState(null);
+
+  useEffect(() => {
+    checkProfile();
+  }, []);
+
+  const checkProfile = async () => {
+    try {
+      const savedProfile = await getRunnerProfile();
+      if (savedProfile) {
+        setHasProfile(true);
+        setProfile(savedProfile);
+      }
+    } catch (error) {
+      console.error('Error checking profile:', error);
+    }
+  };
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
@@ -41,6 +60,28 @@ export default function HomeScreen({ navigation }) {
             Optimize cadence for your next race
           </Text>
         </TouchableOpacity>
+
+        {!hasProfile ? (
+          <TouchableOpacity 
+            style={[styles.card, styles.profileCard]}
+            onPress={() => navigation.navigate('Profile')}
+          >
+            <Text style={styles.cardTitle}>👤 Create Runner Profile</Text>
+            <Text style={styles.cardDescription}>
+              Get personalized recommendations based on your height, weight, age, and experience
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity 
+            style={[styles.card, styles.profileCardComplete]}
+            onPress={() => navigation.navigate('Profile')}
+          >
+            <Text style={styles.cardTitle}>✅ Profile Complete</Text>
+            <Text style={styles.cardDescription}>
+              {profile?.experience} runner • {Math.round(profile?.height)}cm • Age {profile?.age}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
     </ScrollView>
   );
@@ -97,5 +138,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     lineHeight: 20,
+  },
+  profileCard: {
+    borderLeftWidth: 4,
+    borderLeftColor: '#FF9800',
+  },
+  profileCardComplete: {
+    borderLeftWidth: 4,
+    borderLeftColor: '#4CAF50',
   },
 });

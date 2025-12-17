@@ -4,7 +4,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import { FitFileParser } from '../services/FitFileParser';
 import { CadenceAnalyzer } from '../services/CadenceAnalyzer';
-import { saveAnalysis } from '../utils/storage';
+import { saveAnalysis, getRunnerProfile } from '../utils/storage';
 
 export default function AnalysisScreen() {
   const [loading, setLoading] = useState(false);
@@ -115,8 +115,11 @@ export default function AnalysisScreen() {
       // Analyze cadence zones
       const cadenceZones = FitFileParser.analyzeCadenceZones(cadenceData);
       
-      // Generate recommendations (placeholder for now)
-      const recommendations = generateRecommendations(runSummary, cadenceZones);
+      // Get runner profile for personalized recommendations
+      const runnerProfile = await getRunnerProfile();
+      
+      // Generate recommendations
+      const recommendations = generateRecommendations(runSummary, cadenceZones, runnerProfile);
 
       const analysisResults = {
         fileName: file.name,
@@ -155,46 +158,9 @@ export default function AnalysisScreen() {
     }
   };
 
-  const generateRecommendations = (runSummary, cadenceZones) => {
-    const recommendations = [];
-    
-    if (runSummary.avgCadence < 160) {
-      recommendations.push({
-        type: 'improvement',
-        title: 'Increase Your Cadence',
-        message: `Your average cadence of ${Math.round(runSummary.avgCadence)} SPM is below the optimal range. Try to increase to 170-180 SPM.`,
-      });
-    } else if (runSummary.avgCadence > 190) {
-      recommendations.push({
-        type: 'caution',
-        title: 'High Cadence Detected',
-        message: `Your cadence of ${Math.round(runSummary.avgCadence)} SPM is quite high. Consider slightly longer strides.`,
-      });
-    } else if (runSummary.avgCadence >= 170 && runSummary.avgCadence <= 180) {
-      recommendations.push({
-        type: 'success',
-        title: 'Excellent Cadence!',
-        message: `Your average cadence of ${Math.round(runSummary.avgCadence)} SPM is in the optimal range.`,
-      });
-    }
-
-    if (cadenceZones.optimal < 50) {
-      recommendations.push({
-        type: 'improvement',
-        title: 'Consistency Opportunity',
-        message: `Only ${cadenceZones.optimal}% of your run was in the optimal cadence zone. Focus on maintaining 170-180 SPM.`,
-      });
-    }
-
-    if (runSummary.cadenceVariability > 15) {
-      recommendations.push({
-        type: 'improvement',
-        title: 'Improve Cadence Consistency',
-        message: 'Your cadence varied significantly during the run. Practice maintaining a steady rhythm.',
-      });
-    }
-
-    return recommendations;
+  const generateRecommendations = (runSummary, cadenceZones, runnerProfile) => {
+    // Use CadenceAnalyzer for personalized recommendations
+    return CadenceAnalyzer.generateRecommendations(runSummary, runnerProfile);
   };
 
   const handleTestData = async () => {

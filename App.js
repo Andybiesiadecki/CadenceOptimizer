@@ -7,6 +7,7 @@ import HomeScreen from './src/screens/HomeScreen';
 import AnalysisScreen from './src/screens/AnalysisScreen';
 import MetronomeScreen from './src/screens/MetronomeScreen';
 import TargetsScreen from './src/screens/TargetsScreen';
+import RunnerProfileSetup from './src/screens/RunnerProfileSetup';
 
 const Tab = createBottomTabNavigator();
 
@@ -46,6 +47,11 @@ export default function App() {
           name="Targets" 
           component={TargetsScreen}
           options={{ title: 'Race Targets' }}
+        />
+        <Tab.Screen 
+          name="Profile" 
+          component={RunnerProfileSetup}
+          options={{ title: 'Runner Profile' }}
         />
       </Tab.Navigator>
     </NavigationContainer>
