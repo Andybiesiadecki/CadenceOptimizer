@@ -46,7 +46,6 @@ export class MetronomeService {
    */
   async loadSounds() {
     try {
-      // Use Web Audio API for web, simple approach for mobile
       if (typeof window !== 'undefined' && window.AudioContext) {
         // Web platform - use Web Audio API
         this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -54,17 +53,101 @@ export class MetronomeService {
           normal: { frequency: 800, duration: 0.1 },
           accent: { frequency: 1200, duration: 0.15 },
         };
+        this.platform = 'web';
       } else {
-        // Mobile platform - we'll use a different approach
-        console.log('Mobile platform detected - using alternative audio method');
-        this.sounds = {
-          normal: { frequency: 800, duration: 0.1 },
-          accent: { frequency: 1200, duration: 0.15 },
-        };
+        // Mobile platform - use expo-av
+        console.log('Mobile platform detected - loading expo-av sounds');
+        await this.loadMobileSounds();
+        this.platform = 'mobile';
       }
     } catch (error) {
       console.error('Failed to load sounds:', error);
     }
+  }
+
+  /**
+   * Load sounds for mobile using expo-av
+   */
+  async loadMobileSounds() {
+    try {
+      // Create simple beep sounds using expo-av
+      const normalSound = new Audio.Sound();
+      const accentSound = new Audio.Sound();
+
+      // Load simple beep sounds (we'll create them programmatically)
+      await normalSound.loadAsync({
+        uri: this.createBeepDataUri(800, 100), // 800Hz, 100ms
+      });
+
+      await accentSound.loadAsync({
+        uri: this.createBeepDataUri(1200, 150), // 1200Hz, 150ms
+      });
+
+      // Set initial volume
+      await normalSound.setVolumeAsync(this.volume);
+      await accentSound.setVolumeAsync(this.volume);
+
+      this.sounds = {
+        normal: normalSound,
+        accent: accentSound,
+      };
+
+      console.log('Mobile sounds loaded successfully');
+    } catch (error) {
+      console.error('Failed to load mobile sounds:', error);
+      // Fallback to simple approach
+      this.sounds = {
+        normal: null,
+        accent: null,
+      };
+    }
+  }
+
+  /**
+   * Create a simple beep sound as data URI for mobile
+   */
+  createBeepDataUri(frequency, duration) {
+    // Create a simple WAV file data URI
+    const sampleRate = 44100;
+    const samples = Math.floor(sampleRate * duration / 1000);
+    const buffer = new ArrayBuffer(44 + samples * 2);
+    const view = new DataView(buffer);
+
+    // WAV header
+    const writeString = (offset, string) => {
+      for (let i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i));
+      }
+    };
+
+    writeString(0, 'RIFF');
+    view.setUint32(4, 36 + samples * 2, true);
+    writeString(8, 'WAVE');
+    writeString(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    writeString(36, 'data');
+    view.setUint32(40, samples * 2, true);
+
+    // Generate sine wave
+    for (let i = 0; i < samples; i++) {
+      const sample = Math.sin(2 * Math.PI * frequency * i / sampleRate) * 0.3;
+      const intSample = Math.max(-32768, Math.min(32767, Math.floor(sample * 32767)));
+      view.setInt16(44 + i * 2, intSample, true);
+    }
+
+    // Convert to base64
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return 'data:audio/wav;base64,' + btoa(binary);
   }
 
   /**
@@ -130,23 +213,45 @@ export class MetronomeService {
     try {
       if (!this.isInitialized || !this.audioEnabled) return;
 
-      const soundKey = isAccent ? 'accent' : 'normal';
-      const soundConfig = this.sounds[soundKey];
-
-      if (this.audioContext) {
+      if (this.platform === 'web' && this.audioContext) {
         // Web Audio API approach
+        const soundConfig = this.sounds[isAccent ? 'accent' : 'normal'];
         this.playWebAudioBeep(soundConfig.frequency, soundConfig.duration);
-      } else {
-        // Mobile approach - use console for now, will implement native audio later
-        console.log(isAccent ? 'TICK (accent)' : 'tick');
-        
-        // Try to use device vibration as feedback on mobile
-        if (typeof navigator !== 'undefined' && navigator.vibrate) {
-          navigator.vibrate(isAccent ? 100 : 50);
+      } else if (this.platform === 'mobile') {
+        // Mobile expo-av approach
+        const sound = this.sounds[isAccent ? 'accent' : 'normal'];
+        if (sound) {
+          try {
+            await sound.setPositionAsync(0);
+            await sound.playAsync();
+          } catch (playError) {
+            console.log('Sound play error, using fallback:', playError.message);
+            // Fallback to vibration
+            this.playFallbackFeedback(isAccent);
+          }
+        } else {
+          // No sound available, use fallback
+          this.playFallbackFeedback(isAccent);
         }
+      } else {
+        // Fallback for any other case
+        this.playFallbackFeedback(isAccent);
       }
     } catch (error) {
       console.error('Error playing sound:', error);
+      this.playFallbackFeedback(isAccent);
+    }
+  }
+
+  /**
+   * Fallback feedback using vibration and console
+   */
+  playFallbackFeedback(isAccent) {
+    console.log(isAccent ? 'TICK (accent)' : 'tick');
+    
+    // Try to use device vibration as feedback
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(isAccent ? 100 : 50);
     }
   }
 
@@ -190,7 +295,21 @@ export class MetronomeService {
    */
   async setVolume(volume) {
     this.volume = Math.max(0, Math.min(1, volume));
-    // Volume is now handled in the playWebAudioBeep method
+    
+    try {
+      if (this.platform === 'mobile' && this.sounds) {
+        // Update volume for mobile sounds
+        if (this.sounds.normal && this.sounds.normal.setVolumeAsync) {
+          await this.sounds.normal.setVolumeAsync(this.volume);
+        }
+        if (this.sounds.accent && this.sounds.accent.setVolumeAsync) {
+          await this.sounds.accent.setVolumeAsync(this.volume);
+        }
+      }
+      // Web volume is handled in playWebAudioBeep method
+    } catch (error) {
+      console.error('Error setting volume:', error);
+    }
   }
 
   /**
@@ -232,12 +351,20 @@ export class MetronomeService {
     this.stop();
     
     try {
-      if (this.audioContext) {
+      if (this.platform === 'web' && this.audioContext) {
         await this.audioContext.close();
         this.audioContext = null;
+      } else if (this.platform === 'mobile' && this.sounds) {
+        // Cleanup mobile sounds
+        if (this.sounds.normal && this.sounds.normal.unloadAsync) {
+          await this.sounds.normal.unloadAsync();
+        }
+        if (this.sounds.accent && this.sounds.accent.unloadAsync) {
+          await this.sounds.accent.unloadAsync();
+        }
       }
     } catch (error) {
-      console.error('Error cleaning up audio context:', error);
+      console.error('Error cleaning up audio:', error);
     }
     
     this.isInitialized = false;
