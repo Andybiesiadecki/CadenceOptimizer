@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, Alert } from 'react-native';
 import Slider from '@react-native-community/slider';
 import MetronomeService from '../services/MetronomeService';
+import LocationService from '../services/LocationService';
+import TerrainDetector from '../services/TerrainDetector';
 
 export default function MetronomeScreen() {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -10,6 +12,16 @@ export default function MetronomeScreen() {
   const [volume, setVolume] = useState(0.8);
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [mode, setMode] = useState('basic'); // basic, interval, progressive, terrain
+  
+  // Terrain mode states
+  const [isTrackingLocation, setIsTrackingLocation] = useState(false);
+  const [terrainData, setTerrainData] = useState({
+    terrain: 'flat',
+    grade: 0,
+    cadenceAdjustment: 0,
+    confidence: 'low',
+  });
+  const [baseCadence, setBaseCadence] = useState(170); // Original cadence before terrain adjustments
   
   // Animation values
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -24,15 +36,73 @@ export default function MetronomeScreen() {
     return () => {
       // Cleanup when component unmounts
       MetronomeService.cleanup();
+      stopLocationTracking();
     };
   }, []);
+
+  // Handle location updates for terrain detection
+  const handleLocationUpdate = (location, locationHistory) => {
+    const analysis = TerrainDetector.processLocation(location, locationHistory);
+    setTerrainData(analysis);
+    
+    // Adjust cadence if in terrain mode and metronome is playing
+    if (mode === 'terrain' && isPlaying) {
+      const adjustedCadence = baseCadence + analysis.cadenceAdjustment;
+      const newCadence = Math.max(140, Math.min(200, adjustedCadence));
+      
+      if (Math.abs(newCadence - cadence) >= 2) { // Only update if significant change
+        setCadence(newCadence);
+        MetronomeService.updateBpm(newCadence, handleBeat);
+      }
+    }
+  };
+
+  // Start location tracking for terrain mode
+  const startLocationTracking = async () => {
+    try {
+      await LocationService.startTracking(handleLocationUpdate);
+      setIsTrackingLocation(true);
+      console.log('Location tracking started for terrain mode');
+    } catch (error) {
+      console.error('Failed to start location tracking:', error);
+      Alert.alert(
+        'Location Error',
+        'Unable to access GPS. Please enable location permissions for terrain mode.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
+
+  // Stop location tracking
+  const stopLocationTracking = async () => {
+    await LocationService.stopTracking();
+    setIsTrackingLocation(false);
+    TerrainDetector.reset();
+    setTerrainData({
+      terrain: 'flat',
+      grade: 0,
+      cadenceAdjustment: 0,
+      confidence: 'low',
+    });
+    console.log('Location tracking stopped');
+  };
 
   const toggleMetronome = async () => {
     if (isPlaying) {
       MetronomeService.stop();
       setIsPlaying(false);
       setCurrentBeat(0);
+      
+      // Stop location tracking if in terrain mode
+      if (mode === 'terrain') {
+        await stopLocationTracking();
+      }
     } else {
+      // Start location tracking if in terrain mode
+      if (mode === 'terrain') {
+        await startLocationTracking();
+      }
+      
       await MetronomeService.start(cadence, handleBeat);
       setIsPlaying(true);
     }
@@ -70,6 +140,11 @@ export default function MetronomeScreen() {
     const newCadence = Math.max(140, Math.min(200, cadence + delta));
     setCadence(newCadence);
     
+    // Update base cadence for terrain mode
+    if (mode === 'terrain') {
+      setBaseCadence(newCadence);
+    }
+    
     if (isPlaying) {
       await MetronomeService.updateBpm(newCadence, handleBeat);
     }
@@ -77,6 +152,11 @@ export default function MetronomeScreen() {
 
   const setPresetCadence = async (newCadence) => {
     setCadence(newCadence);
+    
+    // Update base cadence for terrain mode
+    if (mode === 'terrain') {
+      setBaseCadence(newCadence);
+    }
     
     if (isPlaying) {
       await MetronomeService.updateBpm(newCadence, handleBeat);
@@ -92,6 +172,56 @@ export default function MetronomeScreen() {
     const newAudioEnabled = !audioEnabled;
     setAudioEnabled(newAudioEnabled);
     MetronomeService.setAudioEnabled(newAudioEnabled);
+  };
+
+  // Handle mode changes
+  const handleModeChange = async (newMode) => {
+    if (newMode === mode) return;
+    
+    // Stop current session if playing
+    const wasPlaying = isPlaying;
+    if (isPlaying) {
+      await toggleMetronome(); // This will stop and cleanup
+    }
+    
+    // Reset terrain data when leaving terrain mode
+    if (mode === 'terrain' && newMode !== 'terrain') {
+      await stopLocationTracking();
+      setCadence(baseCadence); // Reset to base cadence
+    }
+    
+    // Set new mode
+    setMode(newMode);
+    
+    // If switching to terrain mode, set base cadence
+    if (newMode === 'terrain') {
+      setBaseCadence(cadence);
+    }
+    
+    // Restart if was playing
+    if (wasPlaying && newMode === 'basic') {
+      setTimeout(() => toggleMetronome(), 500); // Small delay for cleanup
+    }
+  };
+
+  // Get terrain emoji for display
+  const getTerrainEmoji = (terrain) => {
+    switch (terrain) {
+      case 'uphill': return '🔺';
+      case 'downhill': return '🔻';
+      case 'flat': 
+      default: return '➡️';
+    }
+  };
+
+  // Get confidence color
+  const getConfidenceColor = (confidence) => {
+    switch (confidence) {
+      case 'high': return '#4CAF50';
+      case 'medium': return '#FF9800';
+      case 'low': 
+      default: return '#F44336';
+    }
   };
 
 
@@ -135,6 +265,33 @@ export default function MetronomeScreen() {
           <Text style={styles.beatCounter}>
             Beat: {currentBeat} | {Math.floor(currentBeat / 4) + 1} cycles
           </Text>
+          
+          {/* Terrain Indicator (only show in terrain mode) */}
+          {mode === 'terrain' && (
+            <View style={styles.terrainIndicator}>
+              <View style={styles.terrainRow}>
+                <Text style={styles.terrainEmoji}>
+                  {getTerrainEmoji(terrainData.terrain)}
+                </Text>
+                <Text style={styles.terrainText}>
+                  {terrainData.terrain.charAt(0).toUpperCase() + terrainData.terrain.slice(1)}
+                </Text>
+                <Text style={styles.gradeText}>
+                  {terrainData.grade > 0 ? '+' : ''}{terrainData.grade}%
+                </Text>
+              </View>
+              <View style={styles.adjustmentRow}>
+                <Text style={styles.adjustmentText}>
+                  Cadence: {baseCadence} → {cadence} SPM
+                </Text>
+                <View style={[styles.confidenceDot, { backgroundColor: getConfidenceColor(terrainData.confidence) }]} />
+                <Text style={styles.confidenceText}>{terrainData.confidence}</Text>
+              </View>
+              {!isTrackingLocation && (
+                <Text style={styles.gpsStatus}>📍 GPS: Waiting for signal...</Text>
+              )}
+            </View>
+          )}
         </View>
 
         <View style={styles.cadenceDisplay}>
@@ -225,7 +382,7 @@ export default function MetronomeScreen() {
           </View>
         </View>
 
-        {/* Mode Selection (Future Feature) */}
+        {/* Mode Selection */}
         <View style={styles.modeSection}>
           <Text style={styles.modeTitle}>Metronome Modes</Text>
           <View style={styles.modeButtons}>
@@ -233,23 +390,39 @@ export default function MetronomeScreen() {
               { key: 'basic', label: 'Basic', desc: 'Steady rhythm' },
               { key: 'interval', label: 'Interval', desc: 'Coming soon' },
               { key: 'progressive', label: 'Progressive', desc: 'Coming soon' },
-              { key: 'terrain', label: 'Terrain', desc: 'Coming soon' },
+              { key: 'terrain', label: 'Terrain', desc: 'GPS adaptive' },
             ].map((modeOption) => (
               <TouchableOpacity
                 key={modeOption.key}
                 style={[
                   styles.modeButton,
                   mode === modeOption.key && styles.modeButtonActive,
-                  modeOption.key !== 'basic' && styles.modeButtonDisabled
+                  (modeOption.key !== 'basic' && modeOption.key !== 'terrain') && styles.modeButtonDisabled
                 ]}
-                onPress={() => modeOption.key === 'basic' && setMode(modeOption.key)}
-                disabled={modeOption.key !== 'basic'}
+                onPress={() => (modeOption.key === 'basic' || modeOption.key === 'terrain') && handleModeChange(modeOption.key)}
+                disabled={modeOption.key !== 'basic' && modeOption.key !== 'terrain'}
               >
                 <Text style={styles.modeButtonLabel}>{modeOption.label}</Text>
                 <Text style={styles.modeButtonDesc}>{modeOption.desc}</Text>
               </TouchableOpacity>
             ))}
           </View>
+          
+          {/* Terrain Mode Info */}
+          {mode === 'terrain' && (
+            <View style={styles.terrainInfo}>
+              <Text style={styles.terrainInfoTitle}>🏔️ Terrain Mode Active</Text>
+              <Text style={styles.terrainInfoText}>
+                Cadence automatically adjusts based on GPS-detected terrain:
+              </Text>
+              <Text style={styles.terrainInfoBullet}>• 🔺 Uphill: +5-10 SPM</Text>
+              <Text style={styles.terrainInfoBullet}>• 🔻 Downhill: -3-8 SPM</Text>
+              <Text style={styles.terrainInfoBullet}>• ➡️ Flat: No adjustment</Text>
+              <Text style={styles.terrainInfoNote}>
+                Note: Requires GPS signal. Best used outdoors.
+              </Text>
+            </View>
+          )}
         </View>
       </View>
     </ScrollView>
@@ -526,5 +699,95 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#666',
     textAlign: 'center',
+  },
+  terrainIndicator: {
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  terrainRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  terrainEmoji: {
+    fontSize: 24,
+    marginRight: 8,
+  },
+  terrainText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginRight: 8,
+  },
+  gradeText: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+  adjustmentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  adjustmentText: {
+    fontSize: 12,
+    color: '#666',
+    marginRight: 8,
+  },
+  confidenceDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 4,
+  },
+  confidenceText: {
+    fontSize: 11,
+    color: '#666',
+    textTransform: 'capitalize',
+  },
+  gpsStatus: {
+    fontSize: 11,
+    color: '#FF9800',
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  terrainInfo: {
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: '#E8F5E8',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#4CAF50',
+  },
+  terrainInfoTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2E7D32',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  terrainInfoText: {
+    fontSize: 13,
+    color: '#388E3C',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  terrainInfoBullet: {
+    fontSize: 12,
+    color: '#388E3C',
+    marginBottom: 4,
+    paddingLeft: 8,
+  },
+  terrainInfoNote: {
+    fontSize: 11,
+    color: '#666',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginTop: 8,
   },
 });
