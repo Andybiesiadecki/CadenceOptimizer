@@ -6,6 +6,13 @@ import { FitFileParser } from '../services/FitFileParser';
 import { CadenceAnalyzer } from '../services/CadenceAnalyzer';
 import { saveAnalysis, getRunnerProfile } from '../utils/storage';
 
+// Import chart components
+import CadenceLineChart from '../components/charts/CadenceLineChart';
+import CadenceVsPaceChart from '../components/charts/CadenceVsPaceChart';
+import HeartRateZoneChart from '../components/charts/HeartRateZoneChart';
+import ElevationProfileChart from '../components/charts/ElevationProfileChart';
+import CadenceConsistencyChart from '../components/charts/CadenceConsistencyChart';
+
 export default function AnalysisScreen() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState(null);
@@ -139,6 +146,14 @@ export default function AnalysisScreen() {
           heartRate: heartRateData.length,
           gps: gpsData.length,
         },
+        // Add chart data
+        chartData: {
+          cadence: cadenceData,
+          speed: speedData,
+          heartRate: heartRateData,
+          gps: gpsData,
+          elevation: parsedData.records || [],
+        },
       };
 
       // Save analysis to storage
@@ -231,6 +246,28 @@ export default function AnalysisScreen() {
           speed: 1890,
           heartRate: 1890,
           gps: 1890,
+        },
+        // Add mock chart data
+        chartData: {
+          cadence: Array.from({ length: 1890 }, (_, i) => ({
+            timestamp: new Date(Date.now() - (1890 - i) * 1000),
+            cadence: 165 + Math.sin(i / 100) * 15 + (Math.random() - 0.5) * 10,
+          })),
+          speed: Array.from({ length: 1890 }, (_, i) => ({
+            timestamp: new Date(Date.now() - (1890 - i) * 1000),
+            speed: 3.2 + Math.sin(i / 200) * 0.8 + (Math.random() - 0.5) * 0.3,
+          })),
+          heartRate: Array.from({ length: 1890 }, (_, i) => ({
+            timestamp: new Date(Date.now() - (1890 - i) * 1000),
+            heart_rate: 160 + Math.sin(i / 150) * 20 + (Math.random() - 0.5) * 8,
+          })),
+          elevation: Array.from({ length: 1890 }, (_, i) => ({
+            timestamp: new Date(Date.now() - (1890 - i) * 1000),
+            altitude: 50 + Math.sin(i / 300) * 30,
+            cadence: 165 + Math.sin(i / 100) * 15 + (Math.random() - 0.5) * 10,
+            speed: 3.2 + Math.sin(i / 200) * 0.8 + (Math.random() - 0.5) * 0.3,
+            heart_rate: 160 + Math.sin(i / 150) * 20 + (Math.random() - 0.5) * 8,
+          })),
         },
       };
 
@@ -392,6 +429,52 @@ export default function AnalysisScreen() {
               </View>
             </View>
           )}
+
+          {/* Data Visualization Charts */}
+          <View style={styles.chartsSection}>
+            <Text style={styles.chartsSectionTitle}>📊 Data Visualization</Text>
+            
+            {/* Cadence Over Time */}
+            {results.dataQuality.hasCadence && (
+              <CadenceLineChart 
+                data={results.chartData?.cadence || []} 
+                title="Cadence Over Time"
+              />
+            )}
+
+            {/* Cadence vs Pace */}
+            {results.dataQuality.hasCadence && results.dataQuality.hasSpeed && (
+              <CadenceVsPaceChart 
+                data={results.chartData?.elevation || []} 
+                title="Cadence vs Pace Analysis"
+              />
+            )}
+
+            {/* Cadence Consistency */}
+            {results.dataQuality.hasCadence && (
+              <CadenceConsistencyChart 
+                data={results.chartData?.cadence || []} 
+                title="Cadence Consistency"
+              />
+            )}
+
+            {/* Heart Rate Zones */}
+            {results.dataQuality.hasHeartRate && (
+              <HeartRateZoneChart 
+                data={results.chartData?.heartRate || []} 
+                maxHeartRate={results.runSummary.maxHeartRate || 190}
+                title="Heart Rate Zone Distribution"
+              />
+            )}
+
+            {/* Elevation Profile */}
+            {results.dataQuality.hasGPS && (
+              <ElevationProfileChart 
+                data={results.chartData?.elevation || []} 
+                title="Elevation Profile"
+              />
+            )}
+          </View>
 
           {/* Recommendations */}
           {results.recommendations.length > 0 && (
@@ -679,5 +762,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#1976D2',
     lineHeight: 16,
+  },
+  chartsSection: {
+    marginBottom: 16,
+  },
+  chartsSectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 16,
+    textAlign: 'center',
   },
 });
