@@ -31,27 +31,42 @@ export default function App() {
         <Tab.Screen 
           name="Home" 
           component={HomeScreen}
-          options={{ title: 'Cadence Optimizer' }}
+          options={{ 
+            title: 'Cadence Optimizer',
+            tabBarIcon: ({ color }) => '🏠'
+          }}
         />
         <Tab.Screen 
           name="Analysis" 
           component={AnalysisScreen}
-          options={{ title: 'FIT Analysis' }}
+          options={{ 
+            title: 'FIT Analysis',
+            tabBarIcon: ({ color }) => '📊'
+          }}
         />
         <Tab.Screen 
           name="Metronome" 
           component={MetronomeScreen}
-          options={{ title: 'Metronome' }}
+          options={{ 
+            title: 'Metronome',
+            tabBarIcon: ({ color }) => '🎵'
+          }}
         />
         <Tab.Screen 
           name="Targets" 
           component={TargetsScreen}
-          options={{ title: 'Race Targets' }}
+          options={{ 
+            title: 'Race Targets',
+            tabBarIcon: ({ color }) => '🎯'
+          }}
         />
         <Tab.Screen 
           name="Profile" 
           component={RunnerProfileSetup}
-          options={{ title: 'Runner Profile' }}
+          options={{ 
+            title: 'Profile Setup',
+            tabBarIcon: ({ color }) => '👤'
+          }}
         />
       </Tab.Navigator>
     </NavigationContainer>
