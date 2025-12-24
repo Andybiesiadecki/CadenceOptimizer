@@ -4,6 +4,8 @@ import Slider from '@react-native-community/slider';
 import MetronomeService from '../services/MetronomeService';
 import LocationService from '../services/LocationService';
 import TerrainDetector from '../services/TerrainDetector';
+import WorkoutEngine from '../services/WorkoutEngine';
+import CoachingVoiceService from '../services/CoachingVoiceService';
 
 export default function MetronomeScreen() {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -11,7 +13,12 @@ export default function MetronomeScreen() {
   const [currentBeat, setCurrentBeat] = useState(0);
   const [volume, setVolume] = useState(0.8);
   const [audioEnabled, setAudioEnabled] = useState(true);
-  const [mode, setMode] = useState('basic'); // basic, interval, progressive, terrain
+  const [mode, setMode] = useState('basic'); // basic, interval, progressive, terrain, fartlek
+  
+  // Fartlek mode states
+  const [workoutStatus, setWorkoutStatus] = useState({ active: false });
+  const [coachingEnabled, setCoachingEnabled] = useState(true);
+  const [fartlekDifficulty, setFartlekDifficulty] = useState('intermediate');
   
   // Terrain mode states
   const [isTrackingLocation, setIsTrackingLocation] = useState(false);
@@ -33,12 +40,58 @@ export default function MetronomeScreen() {
   ]).current;
 
   useEffect(() => {
+    // Initialize workout engine callbacks
+    WorkoutEngine.setCallbacks({
+      onPhaseChange: handlePhaseChange,
+      onCadenceChange: handleCadenceChange,
+      onWorkoutComplete: handleWorkoutComplete,
+      onCoachingCue: handleCoachingCue,
+    });
+
+    // Initialize coaching voice
+    CoachingVoiceService.initialize();
+
     return () => {
       // Cleanup when component unmounts
       MetronomeService.cleanup();
+      WorkoutEngine.stopWorkout();
+      CoachingVoiceService.stopSpeaking();
       stopLocationTracking();
     };
   }, []);
+
+  // Workout Engine Callbacks
+  const handlePhaseChange = (phase, phaseIndex, totalPhases) => {
+    console.log(`Phase ${phaseIndex + 1}/${totalPhases}:`, phase);
+    setWorkoutStatus(WorkoutEngine.getStatus());
+  };
+
+  const handleCadenceChange = (newCadence, baseCadence) => {
+    console.log(`Cadence change: ${baseCadence} → ${newCadence} SPM`);
+    setCadence(newCadence);
+    if (isPlaying) {
+      MetronomeService.updateBpm(newCadence, handleBeat);
+    }
+  };
+
+  const handleWorkoutComplete = (workout, stats, completed) => {
+    console.log('Workout completed:', { workout: workout.name, stats, completed });
+    setWorkoutStatus({ active: false });
+    
+    if (completed) {
+      CoachingVoiceService.speak(
+        `Great job! You completed your ${workout.name} workout. ${stats.phasesCompleted} phases completed in ${Math.round(stats.totalTime / 60000)} minutes.`,
+        { priority: 'high', type: 'motivation' }
+      );
+    }
+  };
+
+  const handleCoachingCue = (cue, phase) => {
+    console.log('Coaching cue:', cue.message);
+    if (coachingEnabled) {
+      CoachingVoiceService.speakCoachingCue(cue);
+    }
+  };
 
   // Handle location updates for terrain detection
   const handleLocationUpdate = (location, locationHistory) => {
@@ -90,8 +143,10 @@ export default function MetronomeScreen() {
   const toggleMetronome = async () => {
     if (isPlaying) {
       MetronomeService.stop();
+      WorkoutEngine.stopWorkout();
       setIsPlaying(false);
       setCurrentBeat(0);
+      setWorkoutStatus({ active: false });
       
       // Stop location tracking if in terrain mode
       if (mode === 'terrain') {
@@ -103,8 +158,42 @@ export default function MetronomeScreen() {
         await startLocationTracking();
       }
       
-      await MetronomeService.start(cadence, handleBeat);
+      // Start Fartlek workout if in fartlek mode
+      if (mode === 'fartlek') {
+        await startFartlekWorkout();
+      } else {
+        await MetronomeService.start(cadence, handleBeat);
+      }
+      
       setIsPlaying(true);
+    }
+  };
+
+  // Start Fartlek workout
+  const startFartlekWorkout = async () => {
+    try {
+      const config = {
+        duration: 1800, // 30 minutes
+        difficulty: fartlekDifficulty,
+        baseCadence: cadence,
+        terrainAware: true,
+        coachingEnabled: coachingEnabled,
+      };
+
+      await WorkoutEngine.startFartlek(config);
+      await MetronomeService.start(cadence, handleBeat);
+      setWorkoutStatus(WorkoutEngine.getStatus());
+
+      // Welcome message
+      if (coachingEnabled) {
+        CoachingVoiceService.speak(
+          `Starting your ${fartlekDifficulty} Fartlek workout! Get ready for some speed play. I'll guide you through cadence changes.`,
+          { priority: 'high', type: 'motivation' }
+        );
+      }
+    } catch (error) {
+      console.error('Failed to start Fartlek workout:', error);
+      Alert.alert('Workout Error', 'Failed to start Fartlek workout. Please try again.');
     }
   };
 
@@ -190,6 +279,12 @@ export default function MetronomeScreen() {
       setCadence(baseCadence); // Reset to base cadence
     }
     
+    // Reset workout status when leaving fartlek mode
+    if (mode === 'fartlek' && newMode !== 'fartlek') {
+      WorkoutEngine.stopWorkout();
+      setWorkoutStatus({ active: false });
+    }
+    
     // Set new mode
     setMode(newMode);
     
@@ -198,7 +293,7 @@ export default function MetronomeScreen() {
       setBaseCadence(cadence);
     }
     
-    // Restart if was playing
+    // Restart if was playing and switching to basic mode
     if (wasPlaying && newMode === 'basic') {
       setTimeout(() => toggleMetronome(), 500); // Small delay for cleanup
     }
@@ -388,6 +483,7 @@ export default function MetronomeScreen() {
           <View style={styles.modeButtons}>
             {[
               { key: 'basic', label: 'Basic', desc: 'Steady rhythm' },
+              { key: 'fartlek', label: 'Fartlek', desc: 'Speed play' },
               { key: 'interval', label: 'Interval', desc: 'Coming soon' },
               { key: 'progressive', label: 'Progressive', desc: 'Coming soon' },
               { key: 'terrain', label: 'Terrain', desc: 'GPS adaptive' },
@@ -397,16 +493,149 @@ export default function MetronomeScreen() {
                 style={[
                   styles.modeButton,
                   mode === modeOption.key && styles.modeButtonActive,
-                  (modeOption.key !== 'basic' && modeOption.key !== 'terrain') && styles.modeButtonDisabled
+                  (modeOption.key !== 'basic' && modeOption.key !== 'terrain' && modeOption.key !== 'fartlek') && styles.modeButtonDisabled
                 ]}
-                onPress={() => (modeOption.key === 'basic' || modeOption.key === 'terrain') && handleModeChange(modeOption.key)}
-                disabled={modeOption.key !== 'basic' && modeOption.key !== 'terrain'}
+                onPress={() => (modeOption.key === 'basic' || modeOption.key === 'terrain' || modeOption.key === 'fartlek') && handleModeChange(modeOption.key)}
+                disabled={modeOption.key !== 'basic' && modeOption.key !== 'terrain' && modeOption.key !== 'fartlek'}
               >
                 <Text style={styles.modeButtonLabel}>{modeOption.label}</Text>
                 <Text style={styles.modeButtonDesc}>{modeOption.desc}</Text>
               </TouchableOpacity>
             ))}
           </View>
+          
+          {/* Fartlek Mode Configuration */}
+          {mode === 'fartlek' && (
+            <View style={styles.fartlekConfig}>
+              <Text style={styles.fartlekConfigTitle}>🏃‍♂️ Fartlek Configuration</Text>
+              
+              <View style={styles.configRow}>
+                <Text style={styles.configLabel}>Difficulty Level:</Text>
+                <View style={styles.difficultyButtons}>
+                  {[
+                    { key: 'beginner', label: 'Beginner', desc: 'Gentle changes' },
+                    { key: 'intermediate', label: 'Intermediate', desc: 'Moderate changes' },
+                    { key: 'advanced', label: 'Advanced', desc: 'Challenging' },
+                    { key: 'elite', label: 'Elite', desc: 'Maximum intensity' },
+                  ].map((difficulty) => (
+                    <TouchableOpacity
+                      key={difficulty.key}
+                      style={[
+                        styles.difficultyButton,
+                        fartlekDifficulty === difficulty.key && styles.difficultyButtonActive
+                      ]}
+                      onPress={() => setFartlekDifficulty(difficulty.key)}
+                      disabled={isPlaying}
+                    >
+                      <Text style={[
+                        styles.difficultyButtonText,
+                        fartlekDifficulty === difficulty.key && styles.difficultyButtonTextActive
+                      ]}>
+                        {difficulty.label}
+                      </Text>
+                      <Text style={styles.difficultyButtonDesc}>{difficulty.desc}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              <View style={styles.configRow}>
+                <TouchableOpacity 
+                  style={[styles.coachingToggle, coachingEnabled && styles.coachingToggleActive]}
+                  onPress={() => setCoachingEnabled(!coachingEnabled)}
+                  disabled={isPlaying}
+                >
+                  <Text style={styles.coachingToggleText}>
+                    {coachingEnabled ? '🗣️ Coaching Voice: ON' : '🔇 Coaching Voice: OFF'}
+                  </Text>
+                  <Text style={styles.coachingToggleDesc}>
+                    {coachingEnabled ? 'Voice guidance enabled' : 'Silent workout mode'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.fartlekInfo}>
+                <Text style={styles.fartlekInfoText}>
+                  Fartlek ("speed play") varies your cadence randomly during the workout. 
+                  The difficulty level controls how often and how much your cadence changes.
+                </Text>
+                <Text style={styles.fartlekInfoBullet}>• Duration: 30 minutes</Text>
+                <Text style={styles.fartlekInfoBullet}>• Base cadence: {cadence} SPM</Text>
+                <Text style={styles.fartlekInfoBullet}>• Terrain aware: GPS adjustments included</Text>
+              </View>
+            </View>
+          )}
+
+          {/* Workout Status Display */}
+          {workoutStatus.active && (
+            <View style={styles.workoutStatus}>
+              <Text style={styles.workoutStatusTitle}>🏃‍♂️ Workout Active</Text>
+              
+              <View style={styles.statusRow}>
+                <Text style={styles.statusLabel}>Workout:</Text>
+                <Text style={styles.statusValue}>{workoutStatus.workout?.name}</Text>
+              </View>
+              
+              <View style={styles.statusRow}>
+                <Text style={styles.statusLabel}>Phase:</Text>
+                <Text style={styles.statusValue}>
+                  {workoutStatus.currentPhase + 1} of {workoutStatus.workout?.phases?.length}
+                </Text>
+              </View>
+              
+              {workoutStatus.phase && (
+                <View style={styles.currentPhase}>
+                  <View style={styles.phaseHeader}>
+                    <Text style={styles.phaseIntensity}>
+                      {workoutStatus.phase.intensity === 'hard' ? '🔥' : 
+                       workoutStatus.phase.intensity === 'easy' ? '😌' : '⚡'}
+                    </Text>
+                    <Text style={styles.phaseType}>
+                      {workoutStatus.phase.intensity.toUpperCase()} PHASE
+                    </Text>
+                  </View>
+                  
+                  <View style={styles.phaseProgress}>
+                    <View style={styles.progressBar}>
+                      <View 
+                        style={[
+                          styles.progressFill, 
+                          { width: `${(workoutStatus.phaseProgress || 0) * 100}%` }
+                        ]} 
+                      />
+                    </View>
+                    <Text style={styles.progressText}>
+                      {Math.round((workoutStatus.phaseProgress || 0) * 100)}%
+                    </Text>
+                  </View>
+                  
+                  <View style={styles.phaseStats}>
+                    <Text style={styles.phaseStat}>
+                      Time remaining: {Math.round(workoutStatus.phaseTimeRemaining || 0)}s
+                    </Text>
+                    <Text style={styles.phaseStat}>
+                      Target cadence: {workoutStatus.phase.cadence} SPM
+                    </Text>
+                  </View>
+                </View>
+              )}
+              
+              <View style={styles.workoutProgress}>
+                <Text style={styles.workoutProgressLabel}>Overall Progress</Text>
+                <View style={styles.progressBar}>
+                  <View 
+                    style={[
+                      styles.progressFill, 
+                      { width: `${(workoutStatus.workoutProgress || 0) * 100}%` }
+                    ]} 
+                  />
+                </View>
+                <Text style={styles.workoutProgressText}>
+                  {Math.round(workoutStatus.timeRemaining / 60)} minutes remaining
+                </Text>
+              </View>
+            </View>
+          )}
           
           {/* Terrain Mode Info */}
           {mode === 'terrain' && (
@@ -789,5 +1018,208 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     textAlign: 'center',
     marginTop: 8,
+  },
+  // Fartlek Configuration Styles
+  fartlekConfig: {
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: '#FFF3E0',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FF9800',
+  },
+  fartlekConfigTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#E65100',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  configRow: {
+    marginBottom: 16,
+  },
+  configLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  difficultyButtons: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  difficultyButton: {
+    backgroundColor: '#f8f9fa',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    width: '48%',
+    marginBottom: 8,
+    alignItems: 'center',
+  },
+  difficultyButtonActive: {
+    borderColor: '#FF9800',
+    backgroundColor: '#FFF3E0',
+  },
+  difficultyButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 2,
+  },
+  difficultyButtonTextActive: {
+    color: '#E65100',
+  },
+  difficultyButtonDesc: {
+    fontSize: 10,
+    color: '#666',
+    textAlign: 'center',
+  },
+  coachingToggle: {
+    backgroundColor: '#f8f9fa',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    alignItems: 'center',
+  },
+  coachingToggleActive: {
+    borderColor: '#4CAF50',
+    backgroundColor: '#E8F5E8',
+  },
+  coachingToggleText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  coachingToggleDesc: {
+    fontSize: 12,
+    color: '#666',
+  },
+  fartlekInfo: {
+    marginTop: 8,
+    padding: 12,
+    backgroundColor: '#FFF8E1',
+    borderRadius: 6,
+  },
+  fartlekInfoText: {
+    fontSize: 12,
+    color: '#F57F17',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  fartlekInfoBullet: {
+    fontSize: 11,
+    color: '#F57F17',
+    marginBottom: 2,
+    paddingLeft: 8,
+  },
+  // Workout Status Styles
+  workoutStatus: {
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: '#E3F2FD',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#2196F3',
+  },
+  workoutStatusTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1565C0',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  statusRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  statusLabel: {
+    fontSize: 14,
+    color: '#1976D2',
+    fontWeight: '500',
+  },
+  statusValue: {
+    fontSize: 14,
+    color: '#0D47A1',
+    fontWeight: '600',
+  },
+  currentPhase: {
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#BBDEFB',
+  },
+  phaseHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  phaseIntensity: {
+    fontSize: 20,
+    marginRight: 8,
+  },
+  phaseType: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1565C0',
+  },
+  phaseProgress: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  progressBar: {
+    flex: 1,
+    height: 8,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#4CAF50',
+    borderRadius: 4,
+  },
+  progressText: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '600',
+    minWidth: 35,
+  },
+  phaseStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  phaseStat: {
+    fontSize: 11,
+    color: '#666',
+  },
+  workoutProgress: {
+    marginTop: 12,
+    padding: 8,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 4,
+  },
+  workoutProgressLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  workoutProgressText: {
+    fontSize: 11,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 4,
   },
 });
