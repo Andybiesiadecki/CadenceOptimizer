@@ -45,6 +45,50 @@ export class WorkoutEngine {
   }
 
   /**
+   * Start an Interval workout
+   * @param {Object} config - Interval configuration
+   */
+  async startInterval(config = {}) {
+    const profile = await getRunnerProfile();
+    const intervalConfig = {
+      workDuration: config.workDuration || 240, // 4 minutes default
+      restDuration: config.restDuration || 120, // 2 minutes default
+      intervals: config.intervals || 4, // 4 intervals default
+      workCadence: config.workCadence || this.getBaseCadence(profile) + 15,
+      restCadence: config.restCadence || this.getBaseCadence(profile) - 10,
+      warmupDuration: config.warmupDuration || 300, // 5 minutes
+      cooldownDuration: config.cooldownDuration || 300, // 5 minutes
+      terrainAware: config.terrainAware !== false,
+      coachingEnabled: config.coachingEnabled !== false,
+      ...config
+    };
+
+    const workout = this.generateIntervalWorkout(intervalConfig, profile);
+    await this.startWorkout(workout);
+  }
+
+  /**
+   * Start a Progressive workout
+   * @param {Object} config - Progressive configuration
+   */
+  async startProgressive(config = {}) {
+    const profile = await getRunnerProfile();
+    const progressiveConfig = {
+      duration: config.duration || 1800, // 30 minutes default
+      startCadence: config.startCadence || this.getBaseCadence(profile) - 10,
+      endCadence: config.endCadence || this.getBaseCadence(profile) + 20,
+      progressionType: config.progressionType || 'linear', // linear, exponential, stepped
+      stepDuration: config.stepDuration || 300, // 5 minutes per step
+      terrainAware: config.terrainAware !== false,
+      coachingEnabled: config.coachingEnabled !== false,
+      ...config
+    };
+
+    const workout = this.generateProgressiveWorkout(progressiveConfig, profile);
+    await this.startWorkout(workout);
+  }
+
+  /**
    * Generate a dynamic Fartlek workout
    * @param {Object} config - Configuration
    * @param {Object} profile - Runner profile
@@ -153,6 +197,168 @@ export class WorkoutEngine {
   }
 
   /**
+   * Generate a structured Interval workout
+   * @param {Object} config - Configuration
+   * @param {Object} profile - Runner profile
+   * @returns {Object} Generated workout
+   */
+  generateIntervalWorkout(config, profile) {
+    const { workDuration, restDuration, intervals, workCadence, restCadence, warmupDuration, cooldownDuration, coachingEnabled } = config;
+    
+    const phases = [];
+    let currentTime = 0;
+
+    // Warmup phase
+    phases.push({
+      id: phases.length,
+      cadence: Math.round(restCadence - 5),
+      duration: warmupDuration,
+      intensity: 'warmup',
+      type: 'interval',
+      coachingCues: this.generateIntervalCoachingCues('warmup', restCadence - 5, 0, coachingEnabled),
+      terrainAdjustment: config.terrainAware,
+    });
+    currentTime += warmupDuration;
+
+    // Main interval phases
+    for (let i = 0; i < intervals; i++) {
+      // Work interval
+      phases.push({
+        id: phases.length,
+        cadence: Math.round(workCadence),
+        duration: workDuration,
+        intensity: 'work',
+        type: 'interval',
+        intervalNumber: i + 1,
+        totalIntervals: intervals,
+        coachingCues: this.generateIntervalCoachingCues('work', workCadence, i + 1, coachingEnabled, intervals),
+        terrainAdjustment: config.terrainAware,
+      });
+      currentTime += workDuration;
+
+      // Rest interval (except after last work interval)
+      if (i < intervals - 1) {
+        phases.push({
+          id: phases.length,
+          cadence: Math.round(restCadence),
+          duration: restDuration,
+          intensity: 'rest',
+          type: 'interval',
+          intervalNumber: i + 1,
+          totalIntervals: intervals,
+          coachingCues: this.generateIntervalCoachingCues('rest', restCadence, i + 1, coachingEnabled, intervals),
+          terrainAdjustment: config.terrainAware,
+        });
+        currentTime += restDuration;
+      }
+    }
+
+    // Cooldown phase
+    phases.push({
+      id: phases.length,
+      cadence: Math.round(restCadence - 5),
+      duration: cooldownDuration,
+      intensity: 'cooldown',
+      type: 'interval',
+      coachingCues: this.generateIntervalCoachingCues('cooldown', restCadence - 5, 0, coachingEnabled),
+      terrainAdjustment: config.terrainAware,
+    });
+    currentTime += cooldownDuration;
+
+    return {
+      id: `interval_${Date.now()}`,
+      name: `${intervals}x${Math.round(workDuration/60)}:${Math.round(restDuration/60)} Intervals`,
+      type: 'interval',
+      duration: Math.round(currentTime),
+      workCadence,
+      restCadence,
+      intervals,
+      phases,
+      config,
+      createdAt: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Generate a Progressive workout
+   * @param {Object} config - Configuration
+   * @param {Object} profile - Runner profile
+   * @returns {Object} Generated workout
+   */
+  generateProgressiveWorkout(config, profile) {
+    const { duration, startCadence, endCadence, progressionType, stepDuration, coachingEnabled } = config;
+    
+    const phases = [];
+    let currentTime = 0;
+    const totalSteps = Math.floor(duration / stepDuration);
+    const cadenceRange = endCadence - startCadence;
+
+    for (let step = 0; step < totalSteps; step++) {
+      let stepCadence;
+      
+      // Calculate cadence based on progression type
+      switch (progressionType) {
+        case 'exponential':
+          // Exponential progression (slow start, fast finish)
+          const expProgress = Math.pow(step / (totalSteps - 1), 2);
+          stepCadence = startCadence + (cadenceRange * expProgress);
+          break;
+        case 'stepped':
+          // Stepped progression (discrete jumps every few steps)
+          const stepsPerJump = Math.max(1, Math.floor(totalSteps / 4));
+          const jumpNumber = Math.floor(step / stepsPerJump);
+          stepCadence = startCadence + (cadenceRange * jumpNumber / 3);
+          break;
+        case 'linear':
+        default:
+          // Linear progression
+          stepCadence = startCadence + (cadenceRange * step / (totalSteps - 1));
+          break;
+      }
+
+      const remainingTime = duration - currentTime;
+      const phaseDuration = Math.min(stepDuration, remainingTime);
+      
+      if (phaseDuration <= 0) break;
+
+      // Determine intensity based on cadence relative to range
+      const progress = (stepCadence - startCadence) / cadenceRange;
+      let intensity;
+      if (progress < 0.3) intensity = 'easy';
+      else if (progress < 0.7) intensity = 'moderate';
+      else intensity = 'hard';
+
+      phases.push({
+        id: phases.length,
+        cadence: Math.round(stepCadence),
+        duration: Math.round(phaseDuration),
+        intensity,
+        type: 'progressive',
+        step: step + 1,
+        totalSteps,
+        progress: progress,
+        coachingCues: this.generateProgressiveCoachingCues(stepCadence, step + 1, totalSteps, intensity, coachingEnabled),
+        terrainAdjustment: config.terrainAware,
+      });
+
+      currentTime += phaseDuration;
+    }
+
+    return {
+      id: `progressive_${Date.now()}`,
+      name: `Progressive ${Math.round(duration/60)}min (${startCadence}→${endCadence} SPM)`,
+      type: 'progressive',
+      duration: Math.round(currentTime),
+      startCadence,
+      endCadence,
+      progressionType,
+      phases,
+      config,
+      createdAt: new Date().toISOString(),
+    };
+  }
+
+  /**
    * Generate coaching cues for a phase
    * @param {number} newCadence - Target cadence
    * @param {number} lastCadence - Previous cadence
@@ -240,6 +446,186 @@ export class WorkoutEngine {
         message: 'Longer strides - stay relaxed and efficient',
         type: 'technique',
         priority: 'medium'
+      });
+    }
+
+    return cues;
+  }
+
+  /**
+   * Generate coaching cues for interval phases
+   * @param {string} phaseType - Phase type (warmup, work, rest, cooldown)
+   * @param {number} cadence - Target cadence
+   * @param {number} intervalNumber - Current interval number
+   * @param {boolean} enabled - Whether coaching is enabled
+   * @param {number} totalIntervals - Total number of intervals
+   * @returns {Array} Array of coaching cues
+   */
+  generateIntervalCoachingCues(phaseType, cadence, intervalNumber, enabled, totalIntervals = 0) {
+    if (!enabled) return [];
+
+    const cues = [];
+
+    switch (phaseType) {
+      case 'warmup':
+        cues.push({
+          timing: 0,
+          message: `Starting warmup. Easy pace at ${cadence} steps per minute. Get your body ready for the intervals ahead.`,
+          type: 'guidance',
+          priority: 'high'
+        });
+        cues.push({
+          timing: 0.7,
+          message: 'Warmup almost complete. Get ready for your first work interval!',
+          type: 'instruction',
+          priority: 'medium'
+        });
+        break;
+
+      case 'work':
+        cues.push({
+          timing: 0,
+          message: `Interval ${intervalNumber} of ${totalIntervals}! Work hard at ${cadence} steps per minute!`,
+          type: 'motivation',
+          priority: 'high'
+        });
+        cues.push({
+          timing: 0.25,
+          message: 'Stay strong! Focus on quick, light steps!',
+          type: 'motivation',
+          priority: 'medium'
+        });
+        cues.push({
+          timing: 0.5,
+          message: 'Halfway through this interval. Keep pushing!',
+          type: 'motivation',
+          priority: 'medium'
+        });
+        cues.push({
+          timing: 0.8,
+          message: 'Final push! You\'ve got this!',
+          type: 'motivation',
+          priority: 'high'
+        });
+        break;
+
+      case 'rest':
+        cues.push({
+          timing: 0,
+          message: `Great work! Recovery time. Easy ${cadence} steps per minute. Catch your breath.`,
+          type: 'guidance',
+          priority: 'medium'
+        });
+        cues.push({
+          timing: 0.5,
+          message: 'Stay relaxed but keep moving. Active recovery.',
+          type: 'guidance',
+          priority: 'low'
+        });
+        if (intervalNumber < totalIntervals) {
+          cues.push({
+            timing: 0.8,
+            message: `Get ready for interval ${intervalNumber + 1}!`,
+            type: 'instruction',
+            priority: 'medium'
+          });
+        }
+        break;
+
+      case 'cooldown':
+        cues.push({
+          timing: 0,
+          message: `Excellent work! Cooling down at ${cadence} steps per minute. Let your body recover.`,
+          type: 'motivation',
+          priority: 'high'
+        });
+        cues.push({
+          timing: 0.5,
+          message: 'Nice and easy. Great job completing your interval workout!',
+          type: 'motivation',
+          priority: 'medium'
+        });
+        break;
+    }
+
+    return cues;
+  }
+
+  /**
+   * Generate coaching cues for progressive phases
+   * @param {number} cadence - Target cadence
+   * @param {number} step - Current step number
+   * @param {number} totalSteps - Total number of steps
+   * @param {string} intensity - Phase intensity
+   * @param {boolean} enabled - Whether coaching is enabled
+   * @returns {Array} Array of coaching cues
+   */
+  generateProgressiveCoachingCues(cadence, step, totalSteps, intensity, enabled) {
+    if (!enabled) return [];
+
+    const cues = [];
+    const progress = step / totalSteps;
+
+    // Phase start cue
+    if (step === 1) {
+      cues.push({
+        timing: 0,
+        message: `Starting progressive workout. Beginning easy at ${cadence} steps per minute. We'll build up gradually.`,
+        type: 'instruction',
+        priority: 'high'
+      });
+    } else {
+      cues.push({
+        timing: 0,
+        message: `Step ${step} of ${totalSteps}. Building to ${cadence} steps per minute.`,
+        type: 'instruction',
+        priority: 'medium'
+      });
+    }
+
+    // Progress-based coaching
+    if (progress < 0.3) {
+      cues.push({
+        timing: 0.5,
+        message: 'Still building. Stay relaxed and find your rhythm.',
+        type: 'guidance',
+        priority: 'low'
+      });
+    } else if (progress < 0.7) {
+      cues.push({
+        timing: 0.3,
+        message: 'Picking up the pace now. Feel the progression.',
+        type: 'guidance',
+        priority: 'medium'
+      });
+      cues.push({
+        timing: 0.7,
+        message: 'Good rhythm! Keep building the intensity.',
+        type: 'motivation',
+        priority: 'medium'
+      });
+    } else {
+      cues.push({
+        timing: 0.2,
+        message: 'Now we\'re working! Strong, quick steps!',
+        type: 'motivation',
+        priority: 'medium'
+      });
+      cues.push({
+        timing: 0.6,
+        message: 'Excellent pace! You\'re in the zone!',
+        type: 'motivation',
+        priority: 'medium'
+      });
+    }
+
+    // Final step
+    if (step === totalSteps) {
+      cues.push({
+        timing: 0.8,
+        message: 'Final step! Give it everything you\'ve got!',
+        type: 'motivation',
+        priority: 'high'
       });
     }
 

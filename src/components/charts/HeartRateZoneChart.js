@@ -7,11 +7,11 @@ const screenWidth = Dimensions.get('window').width;
 export default function HeartRateZoneChart({ data, maxHeartRate = 190, title = "Heart Rate Zones" }) {
   // Calculate HR zones based on max HR
   const calculateZones = (maxHR) => ({
-    zone1: { min: 0, max: Math.round(maxHR * 0.6), name: 'Recovery', color: '#2196F3' },
-    zone2: { min: Math.round(maxHR * 0.6), max: Math.round(maxHR * 0.7), name: 'Aerobic', color: '#4CAF50' },
-    zone3: { min: Math.round(maxHR * 0.7), max: Math.round(maxHR * 0.8), name: 'Tempo', color: '#FF9800' },
-    zone4: { min: Math.round(maxHR * 0.8), max: Math.round(maxHR * 0.9), name: 'Threshold', color: '#FF5722' },
-    zone5: { min: Math.round(maxHR * 0.9), max: maxHR, name: 'VO2 Max', color: '#F44336' },
+    zone1: { min: 0, max: Math.round(maxHR * 0.6), name: 'Recovery', color: '#00D4FF' },
+    zone2: { min: Math.round(maxHR * 0.6), max: Math.round(maxHR * 0.7), name: 'Aerobic', color: '#00FF9D' },
+    zone3: { min: Math.round(maxHR * 0.7), max: Math.round(maxHR * 0.8), name: 'Tempo', color: '#FFD700' },
+    zone4: { min: Math.round(maxHR * 0.8), max: Math.round(maxHR * 0.9), name: 'Threshold', color: '#FF6B35' },
+    zone5: { min: Math.round(maxHR * 0.9), max: maxHR, name: 'VO2 Max', color: '#FF1744' },
   });
 
   // Transform data for pie chart
@@ -19,11 +19,11 @@ export default function HeartRateZoneChart({ data, maxHeartRate = 190, title = "
     if (!rawData || rawData.length === 0) {
       // Mock data for demonstration
       return [
-        { name: 'Zone 1 (Recovery)', population: 15, color: zones.zone1.color, legendFontColor: '#333', legendFontSize: 12 },
-        { name: 'Zone 2 (Aerobic)', population: 45, color: zones.zone2.color, legendFontColor: '#333', legendFontSize: 12 },
-        { name: 'Zone 3 (Tempo)', population: 25, color: zones.zone3.color, legendFontColor: '#333', legendFontSize: 12 },
-        { name: 'Zone 4 (Threshold)', population: 12, color: zones.zone4.color, legendFontColor: '#333', legendFontSize: 12 },
-        { name: 'Zone 5 (VO2 Max)', population: 3, color: zones.zone5.color, legendFontColor: '#333', legendFontSize: 12 },
+        { name: 'Zone 1 (Recovery)', population: 15, color: '#00D4FF', legendFontColor: '#FFFFFF', legendFontSize: 12 },
+        { name: 'Zone 2 (Aerobic)', population: 45, color: '#00FF9D', legendFontColor: '#FFFFFF', legendFontSize: 12 },
+        { name: 'Zone 3 (Tempo)', population: 25, color: '#FFD700', legendFontColor: '#FFFFFF', legendFontSize: 12 },
+        { name: 'Zone 4 (Threshold)', population: 12, color: '#FF6B35', legendFontColor: '#FFFFFF', legendFontSize: 12 },
+        { name: 'Zone 5 (VO2 Max)', population: 3, color: '#FF1744', legendFontColor: '#FFFFFF', legendFontSize: 12 },
       ];
     }
 
@@ -48,35 +48,35 @@ export default function HeartRateZoneChart({ data, maxHeartRate = 190, title = "
         name: `Zone 1 (${zones.zone1.min}-${zones.zone1.max})`, 
         population: Math.round((zoneCounts.zone1 / total) * 100), 
         color: zones.zone1.color, 
-        legendFontColor: '#333', 
+        legendFontColor: '#FFFFFF', 
         legendFontSize: 11 
       },
       { 
         name: `Zone 2 (${zones.zone2.min}-${zones.zone2.max})`, 
         population: Math.round((zoneCounts.zone2 / total) * 100), 
         color: zones.zone2.color, 
-        legendFontColor: '#333', 
+        legendFontColor: '#FFFFFF', 
         legendFontSize: 11 
       },
       { 
         name: `Zone 3 (${zones.zone3.min}-${zones.zone3.max})`, 
         population: Math.round((zoneCounts.zone3 / total) * 100), 
         color: zones.zone3.color, 
-        legendFontColor: '#333', 
+        legendFontColor: '#FFFFFF', 
         legendFontSize: 11 
       },
       { 
         name: `Zone 4 (${zones.zone4.min}-${zones.zone4.max})`, 
         population: Math.round((zoneCounts.zone4 / total) * 100), 
         color: zones.zone4.color, 
-        legendFontColor: '#333', 
+        legendFontColor: '#FFFFFF', 
         legendFontSize: 11 
       },
       { 
         name: `Zone 5 (${zones.zone5.min}-${zones.zone5.max})`, 
         population: Math.round((zoneCounts.zone5 / total) * 100), 
         color: zones.zone5.color, 
-        legendFontColor: '#333', 
+        legendFontColor: '#FFFFFF', 
         legendFontSize: 11 
       },
     ].filter(zone => zone.population > 0); // Only show zones with data
@@ -86,7 +86,7 @@ export default function HeartRateZoneChart({ data, maxHeartRate = 190, title = "
   const chartData = transformData(data, zones);
   
   const chartConfig = {
-    color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+    color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
     strokeWidth: 2,
     barPercentage: 0.5,
     useShadowColorFromDataset: false,
@@ -166,30 +166,38 @@ export default function HeartRateZoneChart({ data, maxHeartRate = 190, title = "
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 20,
+    padding: 20,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    shadowColor: '#00FF9D',
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 12,
+    elevation: 8,
   },
   title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#FFFFFF',
     marginBottom: 4,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   subtitle: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 16,
+    color: 'rgba(255, 255, 255, 0.7)',
+    marginBottom: 20,
+    fontWeight: '500',
   },
   chartContainer: {
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderRadius: 16,
+    padding: 10,
   },
   noDataContainer: {
     alignItems: 'center',
@@ -201,43 +209,53 @@ const styles = StyleSheet.create({
   },
   noDataMessage: {
     fontSize: 14,
-    color: '#666',
+    color: 'rgba(255, 255, 255, 0.7)',
     textAlign: 'center',
     lineHeight: 20,
+    fontWeight: '500',
   },
   insightCard: {
-    backgroundColor: '#E3F2FD',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
+    backgroundColor: 'rgba(0, 212, 255, 0.1)',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
     borderLeftWidth: 4,
-    borderLeftColor: '#2196F3',
+    borderLeftColor: '#00D4FF',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 212, 255, 0.2)',
   },
   insightTitle: {
     fontSize: 14,
-    fontWeight: 'bold',
-    color: '#1976D2',
-    marginBottom: 4,
+    fontWeight: '700',
+    color: '#00D4FF',
+    marginBottom: 6,
+    letterSpacing: 0.5,
   },
   insightText: {
     fontSize: 13,
-    color: '#1976D2',
+    color: 'rgba(255, 255, 255, 0.9)',
     lineHeight: 18,
+    fontWeight: '500',
   },
   guideCard: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    padding: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   guideTitle: {
     fontSize: 12,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 4,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 8,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   guideText: {
     fontSize: 11,
-    color: '#666',
+    color: 'rgba(255, 255, 255, 0.7)',
     lineHeight: 16,
+    fontWeight: '500',
   },
 });

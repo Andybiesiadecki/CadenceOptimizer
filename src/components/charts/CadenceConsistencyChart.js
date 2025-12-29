@@ -52,18 +52,18 @@ export default function CadenceConsistencyChart({ data, title = "Cadence Consist
   const chartData = transformData(data);
   
   const chartConfig = {
-    backgroundColor: '#ffffff',
-    backgroundGradientFrom: '#ffffff',
-    backgroundGradientTo: '#ffffff',
+    backgroundColor: 'transparent',
+    backgroundGradientFrom: 'rgba(10, 10, 10, 0.8)',
+    backgroundGradientTo: 'rgba(10, 10, 10, 0.8)',
     decimalPlaces: 0,
     color: (opacity = 1) => `rgba(156, 39, 176, ${opacity})`,
-    labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+    labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity * 0.8})`,
     style: {
       borderRadius: 16,
     },
     propsForBackgroundLines: {
       strokeDasharray: '',
-      stroke: '#e0e0e0',
+      stroke: 'rgba(255, 255, 255, 0.1)',
       strokeWidth: 1,
     },
   };
@@ -180,11 +180,11 @@ export default function CadenceConsistencyChart({ data, title = "Cadence Consist
       {/* Zone Legend */}
       <View style={styles.legendContainer}>
         <View style={styles.legendItem}>
-          <View style={[styles.legendColor, { backgroundColor: '#4CAF50' }]} />
+          <View style={[styles.legendColor, { backgroundColor: '#00FF9D' }]} />
           <Text style={styles.legendText}>170-180 SPM (Optimal)</Text>
         </View>
         <View style={styles.legendItem}>
-          <View style={[styles.legendColor, { backgroundColor: '#FF9800' }]} />
+          <View style={[styles.legendColor, { backgroundColor: '#9C27B0' }]} />
           <Text style={styles.legendText}>Other ranges</Text>
         </View>
       </View>
@@ -194,30 +194,38 @@ export default function CadenceConsistencyChart({ data, title = "Cadence Consist
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 20,
+    padding: 20,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    shadowColor: '#00FF9D',
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 12,
+    elevation: 8,
   },
   title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#FFFFFF',
     marginBottom: 4,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   subtitle: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 16,
+    color: 'rgba(255, 255, 255, 0.7)',
+    marginBottom: 20,
+    fontWeight: '500',
   },
   chartContainer: {
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderRadius: 16,
+    padding: 10,
   },
   chart: {
     borderRadius: 12,
@@ -225,67 +233,81 @@ const styles = StyleSheet.create({
   metricsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   metricCard: {
     alignItems: 'center',
   },
   metricValue: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '800',
     color: '#9C27B0',
-    marginBottom: 2,
+    marginBottom: 4,
+    letterSpacing: 0.5,
   },
   metricLabel: {
     fontSize: 11,
-    color: '#666',
+    color: 'rgba(255, 255, 255, 0.7)',
     textAlign: 'center',
+    fontWeight: '600',
+    textTransform: 'uppercase',
   },
   insightCard: {
-    backgroundColor: '#F3E5F5',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
+    backgroundColor: 'rgba(156, 39, 176, 0.1)',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
     borderLeftWidth: 4,
     borderLeftColor: '#9C27B0',
+    borderWidth: 1,
+    borderColor: 'rgba(156, 39, 176, 0.2)',
   },
   insightTitle: {
     fontSize: 14,
-    fontWeight: 'bold',
-    color: '#7B1FA2',
-    marginBottom: 4,
+    fontWeight: '700',
+    color: '#9C27B0',
+    marginBottom: 6,
+    letterSpacing: 0.5,
   },
   insightText: {
     fontSize: 13,
-    color: '#7B1FA2',
+    color: 'rgba(255, 255, 255, 0.9)',
     lineHeight: 18,
+    fontWeight: '500',
   },
   tipsCard: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   tipsTitle: {
     fontSize: 12,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 4,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 8,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   tipsText: {
     fontSize: 11,
-    color: '#666',
+    color: 'rgba(255, 255, 255, 0.7)',
     lineHeight: 16,
+    fontWeight: '500',
   },
   legendContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingTop: 8,
+    paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
   },
   legendItem: {
     flexDirection: 'row',
@@ -299,6 +321,7 @@ const styles = StyleSheet.create({
   },
   legendText: {
     fontSize: 11,
-    color: '#666',
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontWeight: '500',
   },
 });

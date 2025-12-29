@@ -20,6 +20,23 @@ export default function MetronomeScreen() {
   const [coachingEnabled, setCoachingEnabled] = useState(true);
   const [fartlekDifficulty, setFartlekDifficulty] = useState('intermediate');
   
+  // Interval mode states
+  const [intervalConfig, setIntervalConfig] = useState({
+    workDuration: 240, // 4 minutes
+    restDuration: 120, // 2 minutes
+    intervals: 4,
+    workCadence: 185,
+    restCadence: 160,
+  });
+  
+  // Progressive mode states
+  const [progressiveConfig, setProgressiveConfig] = useState({
+    duration: 1800, // 30 minutes
+    startCadence: 160,
+    endCadence: 185,
+    progressionType: 'linear',
+  });
+  
   // Terrain mode states
   const [isTrackingLocation, setIsTrackingLocation] = useState(false);
   const [terrainData, setTerrainData] = useState({
@@ -161,6 +178,10 @@ export default function MetronomeScreen() {
       // Start Fartlek workout if in fartlek mode
       if (mode === 'fartlek') {
         await startFartlekWorkout();
+      } else if (mode === 'interval') {
+        await startIntervalWorkout();
+      } else if (mode === 'progressive') {
+        await startProgressiveWorkout();
       } else {
         await MetronomeService.start(cadence, handleBeat);
       }
@@ -194,6 +215,62 @@ export default function MetronomeScreen() {
     } catch (error) {
       console.error('Failed to start Fartlek workout:', error);
       Alert.alert('Workout Error', 'Failed to start Fartlek workout. Please try again.');
+    }
+  };
+
+  // Start Interval workout
+  const startIntervalWorkout = async () => {
+    try {
+      const config = {
+        ...intervalConfig,
+        workCadence: intervalConfig.workCadence || cadence + 15,
+        restCadence: intervalConfig.restCadence || cadence - 10,
+        terrainAware: true,
+        coachingEnabled: coachingEnabled,
+      };
+
+      await WorkoutEngine.startInterval(config);
+      await MetronomeService.start(cadence, handleBeat);
+      setWorkoutStatus(WorkoutEngine.getStatus());
+
+      // Welcome message
+      if (coachingEnabled) {
+        CoachingVoiceService.speak(
+          `Starting your ${config.intervals} by ${Math.round(config.workDuration/60)} minute interval workout! Let's warm up first.`,
+          { priority: 'high', type: 'motivation' }
+        );
+      }
+    } catch (error) {
+      console.error('Failed to start Interval workout:', error);
+      Alert.alert('Workout Error', 'Failed to start Interval workout. Please try again.');
+    }
+  };
+
+  // Start Progressive workout
+  const startProgressiveWorkout = async () => {
+    try {
+      const config = {
+        ...progressiveConfig,
+        startCadence: progressiveConfig.startCadence || cadence - 10,
+        endCadence: progressiveConfig.endCadence || cadence + 20,
+        terrainAware: true,
+        coachingEnabled: coachingEnabled,
+      };
+
+      await WorkoutEngine.startProgressive(config);
+      await MetronomeService.start(cadence, handleBeat);
+      setWorkoutStatus(WorkoutEngine.getStatus());
+
+      // Welcome message
+      if (coachingEnabled) {
+        CoachingVoiceService.speak(
+          `Starting your ${Math.round(config.duration/60)} minute progressive workout! We'll build from ${config.startCadence} to ${config.endCadence} steps per minute.`,
+          { priority: 'high', type: 'motivation' }
+        );
+      }
+    } catch (error) {
+      console.error('Failed to start Progressive workout:', error);
+      Alert.alert('Workout Error', 'Failed to start Progressive workout. Please try again.');
     }
   };
 
@@ -279,8 +356,9 @@ export default function MetronomeScreen() {
       setCadence(baseCadence); // Reset to base cadence
     }
     
-    // Reset workout status when leaving fartlek mode
-    if (mode === 'fartlek' && newMode !== 'fartlek') {
+    // Reset workout status when leaving workout modes
+    if ((mode === 'fartlek' || mode === 'interval' || mode === 'progressive') && 
+        (newMode !== 'fartlek' && newMode !== 'interval' && newMode !== 'progressive')) {
       WorkoutEngine.stopWorkout();
       setWorkoutStatus({ active: false });
     }
@@ -333,7 +411,8 @@ export default function MetronomeScreen() {
               styles.pulseCircle,
               {
                 transform: [{ scale: pulseAnim }],
-                backgroundColor: isPlaying ? '#007AFF' : '#ccc',
+                backgroundColor: isPlaying ? 'rgba(0, 255, 157, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                borderColor: isPlaying ? '#00FF9D' : 'rgba(255, 255, 255, 0.2)',
               }
             ]}
           >
@@ -484,8 +563,8 @@ export default function MetronomeScreen() {
             {[
               { key: 'basic', label: 'Basic', desc: 'Steady rhythm' },
               { key: 'fartlek', label: 'Fartlek', desc: 'Speed play' },
-              { key: 'interval', label: 'Interval', desc: 'Coming soon' },
-              { key: 'progressive', label: 'Progressive', desc: 'Coming soon' },
+              { key: 'interval', label: 'Interval', desc: 'Work/rest cycles' },
+              { key: 'progressive', label: 'Progressive', desc: 'Build-up runs' },
               { key: 'terrain', label: 'Terrain', desc: 'GPS adaptive' },
             ].map((modeOption) => (
               <TouchableOpacity
@@ -493,10 +572,8 @@ export default function MetronomeScreen() {
                 style={[
                   styles.modeButton,
                   mode === modeOption.key && styles.modeButtonActive,
-                  (modeOption.key !== 'basic' && modeOption.key !== 'terrain' && modeOption.key !== 'fartlek') && styles.modeButtonDisabled
                 ]}
-                onPress={() => (modeOption.key === 'basic' || modeOption.key === 'terrain' || modeOption.key === 'fartlek') && handleModeChange(modeOption.key)}
-                disabled={modeOption.key !== 'basic' && modeOption.key !== 'terrain' && modeOption.key !== 'fartlek'}
+                onPress={() => handleModeChange(modeOption.key)}
               >
                 <Text style={styles.modeButtonLabel}>{modeOption.label}</Text>
                 <Text style={styles.modeButtonDesc}>{modeOption.desc}</Text>
@@ -562,6 +639,283 @@ export default function MetronomeScreen() {
                 <Text style={styles.fartlekInfoBullet}>• Duration: 30 minutes</Text>
                 <Text style={styles.fartlekInfoBullet}>• Base cadence: {cadence} SPM</Text>
                 <Text style={styles.fartlekInfoBullet}>• Terrain aware: GPS adjustments included</Text>
+              </View>
+            </View>
+          )}
+
+          {/* Interval Mode Configuration */}
+          {mode === 'interval' && (
+            <View style={styles.intervalConfig}>
+              <Text style={styles.intervalConfigTitle}>⏱️ Interval Configuration</Text>
+              
+              <View style={styles.configRow}>
+                <Text style={styles.configLabel}>Workout Structure:</Text>
+                <View style={styles.intervalInputs}>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Intervals:</Text>
+                    <View style={styles.numberInput}>
+                      <TouchableOpacity 
+                        style={styles.numberButton}
+                        onPress={() => setIntervalConfig(prev => ({...prev, intervals: Math.max(1, prev.intervals - 1)}))}
+                        disabled={isPlaying}
+                      >
+                        <Text style={styles.numberButtonText}>-</Text>
+                      </TouchableOpacity>
+                      <Text style={styles.numberValue}>{intervalConfig.intervals}</Text>
+                      <TouchableOpacity 
+                        style={styles.numberButton}
+                        onPress={() => setIntervalConfig(prev => ({...prev, intervals: Math.min(10, prev.intervals + 1)}))}
+                        disabled={isPlaying}
+                      >
+                        <Text style={styles.numberButtonText}>+</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                  
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Work (min):</Text>
+                    <View style={styles.numberInput}>
+                      <TouchableOpacity 
+                        style={styles.numberButton}
+                        onPress={() => setIntervalConfig(prev => ({...prev, workDuration: Math.max(60, prev.workDuration - 60)}))}
+                        disabled={isPlaying}
+                      >
+                        <Text style={styles.numberButtonText}>-</Text>
+                      </TouchableOpacity>
+                      <Text style={styles.numberValue}>{Math.round(intervalConfig.workDuration/60)}</Text>
+                      <TouchableOpacity 
+                        style={styles.numberButton}
+                        onPress={() => setIntervalConfig(prev => ({...prev, workDuration: Math.min(600, prev.workDuration + 60)}))}
+                        disabled={isPlaying}
+                      >
+                        <Text style={styles.numberButtonText}>+</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                  
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Rest (min):</Text>
+                    <View style={styles.numberInput}>
+                      <TouchableOpacity 
+                        style={styles.numberButton}
+                        onPress={() => setIntervalConfig(prev => ({...prev, restDuration: Math.max(30, prev.restDuration - 30)}))}
+                        disabled={isPlaying}
+                      >
+                        <Text style={styles.numberButtonText}>-</Text>
+                      </TouchableOpacity>
+                      <Text style={styles.numberValue}>{Math.round(intervalConfig.restDuration/60)}</Text>
+                      <TouchableOpacity 
+                        style={styles.numberButton}
+                        onPress={() => setIntervalConfig(prev => ({...prev, restDuration: Math.min(300, prev.restDuration + 30)}))}
+                        disabled={isPlaying}
+                      >
+                        <Text style={styles.numberButtonText}>+</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.configRow}>
+                <Text style={styles.configLabel}>Cadence Targets:</Text>
+                <View style={styles.cadenceInputs}>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Work SPM:</Text>
+                    <View style={styles.numberInput}>
+                      <TouchableOpacity 
+                        style={styles.numberButton}
+                        onPress={() => setIntervalConfig(prev => ({...prev, workCadence: Math.max(150, prev.workCadence - 5)}))}
+                        disabled={isPlaying}
+                      >
+                        <Text style={styles.numberButtonText}>-</Text>
+                      </TouchableOpacity>
+                      <Text style={styles.numberValue}>{intervalConfig.workCadence}</Text>
+                      <TouchableOpacity 
+                        style={styles.numberButton}
+                        onPress={() => setIntervalConfig(prev => ({...prev, workCadence: Math.min(200, prev.workCadence + 5)}))}
+                        disabled={isPlaying}
+                      >
+                        <Text style={styles.numberButtonText}>+</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                  
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Rest SPM:</Text>
+                    <View style={styles.numberInput}>
+                      <TouchableOpacity 
+                        style={styles.numberButton}
+                        onPress={() => setIntervalConfig(prev => ({...prev, restCadence: Math.max(140, prev.restCadence - 5)}))}
+                        disabled={isPlaying}
+                      >
+                        <Text style={styles.numberButtonText}>-</Text>
+                      </TouchableOpacity>
+                      <Text style={styles.numberValue}>{intervalConfig.restCadence}</Text>
+                      <TouchableOpacity 
+                        style={styles.numberButton}
+                        onPress={() => setIntervalConfig(prev => ({...prev, restCadence: Math.min(180, prev.restCadence + 5)}))}
+                        disabled={isPlaying}
+                      >
+                        <Text style={styles.numberButtonText}>+</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.configRow}>
+                <TouchableOpacity 
+                  style={[styles.coachingToggle, coachingEnabled && styles.coachingToggleActive]}
+                  onPress={() => setCoachingEnabled(!coachingEnabled)}
+                  disabled={isPlaying}
+                >
+                  <Text style={styles.coachingToggleText}>
+                    {coachingEnabled ? '🗣️ Coaching Voice: ON' : '🔇 Coaching Voice: OFF'}
+                  </Text>
+                  <Text style={styles.coachingToggleDesc}>
+                    {coachingEnabled ? 'Voice guidance enabled' : 'Silent workout mode'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.intervalInfo}>
+                <Text style={styles.intervalInfoText}>
+                  Structured intervals with work/rest cycles. Includes 5-minute warmup and cooldown.
+                </Text>
+                <Text style={styles.intervalInfoBullet}>• Total time: ~{Math.round((300 + (intervalConfig.workDuration + intervalConfig.restDuration) * intervalConfig.intervals - intervalConfig.restDuration + 300) / 60)} minutes</Text>
+                <Text style={styles.intervalInfoBullet}>• Work intervals: {intervalConfig.intervals}x{Math.round(intervalConfig.workDuration/60)}min at {intervalConfig.workCadence} SPM</Text>
+                <Text style={styles.intervalInfoBullet}>• Recovery: {Math.round(intervalConfig.restDuration/60)}min at {intervalConfig.restCadence} SPM</Text>
+              </View>
+            </View>
+          )}
+
+          {/* Progressive Mode Configuration */}
+          {mode === 'progressive' && (
+            <View style={styles.progressiveConfig}>
+              <Text style={styles.progressiveConfigTitle}>📈 Progressive Configuration</Text>
+              
+              <View style={styles.configRow}>
+                <Text style={styles.configLabel}>Workout Duration:</Text>
+                <View style={styles.durationButtons}>
+                  {[15, 20, 30, 45].map((minutes) => (
+                    <TouchableOpacity
+                      key={minutes}
+                      style={[
+                        styles.durationButton,
+                        progressiveConfig.duration === minutes * 60 && styles.durationButtonActive
+                      ]}
+                      onPress={() => setProgressiveConfig(prev => ({...prev, duration: minutes * 60}))}
+                      disabled={isPlaying}
+                    >
+                      <Text style={[
+                        styles.durationButtonText,
+                        progressiveConfig.duration === minutes * 60 && styles.durationButtonTextActive
+                      ]}>
+                        {minutes}min
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              <View style={styles.configRow}>
+                <Text style={styles.configLabel}>Cadence Range:</Text>
+                <View style={styles.cadenceInputs}>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Start SPM:</Text>
+                    <View style={styles.numberInput}>
+                      <TouchableOpacity 
+                        style={styles.numberButton}
+                        onPress={() => setProgressiveConfig(prev => ({...prev, startCadence: Math.max(140, prev.startCadence - 5)}))}
+                        disabled={isPlaying}
+                      >
+                        <Text style={styles.numberButtonText}>-</Text>
+                      </TouchableOpacity>
+                      <Text style={styles.numberValue}>{progressiveConfig.startCadence}</Text>
+                      <TouchableOpacity 
+                        style={styles.numberButton}
+                        onPress={() => setProgressiveConfig(prev => ({...prev, startCadence: Math.min(180, prev.startCadence + 5)}))}
+                        disabled={isPlaying}
+                      >
+                        <Text style={styles.numberButtonText}>+</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                  
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>End SPM:</Text>
+                    <View style={styles.numberInput}>
+                      <TouchableOpacity 
+                        style={styles.numberButton}
+                        onPress={() => setProgressiveConfig(prev => ({...prev, endCadence: Math.max(160, prev.endCadence - 5)}))}
+                        disabled={isPlaying}
+                      >
+                        <Text style={styles.numberButtonText}>-</Text>
+                      </TouchableOpacity>
+                      <Text style={styles.numberValue}>{progressiveConfig.endCadence}</Text>
+                      <TouchableOpacity 
+                        style={styles.numberButton}
+                        onPress={() => setProgressiveConfig(prev => ({...prev, endCadence: Math.min(200, prev.endCadence + 5)}))}
+                        disabled={isPlaying}
+                      >
+                        <Text style={styles.numberButtonText}>+</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.configRow}>
+                <Text style={styles.configLabel}>Progression Type:</Text>
+                <View style={styles.progressionButtons}>
+                  {[
+                    { key: 'linear', label: 'Linear', desc: 'Steady build' },
+                    { key: 'exponential', label: 'Exponential', desc: 'Slow start' },
+                    { key: 'stepped', label: 'Stepped', desc: 'Discrete jumps' },
+                  ].map((progression) => (
+                    <TouchableOpacity
+                      key={progression.key}
+                      style={[
+                        styles.progressionButton,
+                        progressiveConfig.progressionType === progression.key && styles.progressionButtonActive
+                      ]}
+                      onPress={() => setProgressiveConfig(prev => ({...prev, progressionType: progression.key}))}
+                      disabled={isPlaying}
+                    >
+                      <Text style={[
+                        styles.progressionButtonText,
+                        progressiveConfig.progressionType === progression.key && styles.progressionButtonTextActive
+                      ]}>
+                        {progression.label}
+                      </Text>
+                      <Text style={styles.progressionButtonDesc}>{progression.desc}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              <View style={styles.configRow}>
+                <TouchableOpacity 
+                  style={[styles.coachingToggle, coachingEnabled && styles.coachingToggleActive]}
+                  onPress={() => setCoachingEnabled(!coachingEnabled)}
+                  disabled={isPlaying}
+                >
+                  <Text style={styles.coachingToggleText}>
+                    {coachingEnabled ? '🗣️ Coaching Voice: ON' : '🔇 Coaching Voice: OFF'}
+                  </Text>
+                  <Text style={styles.coachingToggleDesc}>
+                    {coachingEnabled ? 'Voice guidance enabled' : 'Silent workout mode'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.progressiveInfo}>
+                <Text style={styles.progressiveInfoText}>
+                  Gradually build your cadence from start to finish. Perfect for tempo runs and threshold training.
+                </Text>
+                <Text style={styles.progressiveInfoBullet}>• Duration: {Math.round(progressiveConfig.duration/60)} minutes</Text>
+                <Text style={styles.progressiveInfoBullet}>• Build from {progressiveConfig.startCadence} to {progressiveConfig.endCadence} SPM</Text>
+                <Text style={styles.progressiveInfoBullet}>• Progression: {progressiveConfig.progressionType}</Text>
               </View>
             </View>
           )}
@@ -661,239 +1015,295 @@ export default function MetronomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#0A0A0A', // Deep black background
   },
   section: {
     padding: 20,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 32,
+    fontWeight: '900',
     marginBottom: 24,
     textAlign: 'center',
-    color: '#333',
+    color: '#FFFFFF',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
   visualSection: {
     alignItems: 'center',
     marginBottom: 32,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)', // Glass morphism
+    borderRadius: 24,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    backdropFilter: 'blur(10px)',
   },
   pulseCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 24,
+    borderWidth: 3,
+    borderColor: 'rgba(0, 255, 157, 0.3)', // Neon green border
+    shadowColor: '#00FF9D',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 10,
   },
   pulseText: {
-    fontSize: 48,
-    color: '#fff',
+    fontSize: 56,
+    color: '#00FF9D', // Neon green
+    textShadowColor: '#00FF9D',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 10,
   },
   beatIndicators: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    width: 200,
-    marginBottom: 16,
+    width: 220,
+    marginBottom: 20,
   },
   beatDot: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#007AFF',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(0, 255, 157, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(0, 255, 157, 0.4)',
   },
   beatLabel: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
+    color: '#00FF9D',
+    fontSize: 16,
+    fontWeight: '800',
+    textShadowColor: '#00FF9D',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 5,
   },
   beatCounter: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.7)',
     textAlign: 'center',
+    fontWeight: '600',
   },
   cadenceDisplay: {
     alignItems: 'center',
     marginBottom: 32,
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: 20,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   cadenceValue: {
-    fontSize: 64,
-    fontWeight: 'bold',
-    color: '#007AFF',
+    fontSize: 72,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    textShadowColor: 'rgba(0, 255, 157, 0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
   },
   cadenceLabel: {
-    fontSize: 18,
-    color: '#666',
+    fontSize: 20,
+    color: 'rgba(255, 255, 255, 0.6)',
     marginTop: 8,
+    fontWeight: '700',
+    letterSpacing: 2,
   },
   controls: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 32,
+    paddingHorizontal: 10,
   },
   adjustButton: {
-    backgroundColor: '#fff',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    width: 70,
+    height: 70,
+    borderRadius: 35,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   adjustButtonDisabled: {
-    backgroundColor: '#f0f0f0',
-    opacity: 0.6,
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    opacity: 0.4,
   },
   adjustButtonText: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#007AFF',
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#00FF9D',
+    textShadowColor: '#00FF9D',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 5,
   },
   playButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-    borderRadius: 30,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
+    backgroundColor: '#00FF9D', // Solid neon green
+    paddingHorizontal: 40,
+    paddingVertical: 20,
+    borderRadius: 35,
+    shadowColor: '#00FF9D',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 12,
+    borderWidth: 2,
+    borderColor: 'rgba(0, 255, 157, 0.3)',
   },
   playButtonActive: {
-    backgroundColor: '#FF3B30',
+    backgroundColor: '#FF3B30', // Solid red for stop
+    shadowColor: '#FF3B30',
+    borderColor: 'rgba(255, 59, 48, 0.3)',
   },
   playButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
+    color: '#000000',
+    fontSize: 20,
+    fontWeight: '900',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
   audioControls: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 16,
+    padding: 20,
     marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   controlLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 12,
-    color: '#333',
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 16,
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   audioRow: {
     marginBottom: 16,
   },
   audioToggle: {
-    backgroundColor: '#f0f0f0',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 12,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
   },
   audioToggleActive: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: 'rgba(0, 255, 157, 0.15)',
+    borderColor: 'rgba(0, 255, 157, 0.3)',
+    shadowColor: '#00FF9D',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
   },
   audioToggleText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   volumeControl: {
-    marginTop: 8,
+    marginTop: 12,
   },
   volumeLabel: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
+    color: 'rgba(255, 255, 255, 0.7)',
+    marginBottom: 12,
+    fontWeight: '600',
   },
   volumeSlider: {
     width: '100%',
     height: 40,
   },
   sliderThumb: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#00FF9D',
+    width: 24,
+    height: 24,
+    shadowColor: '#00FF9D',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
   },
   presets: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 16,
+    padding: 20,
     marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   presetsTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 12,
-    color: '#333',
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 16,
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   presetButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
   presetButton: {
-    backgroundColor: '#f8f9fa',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#ddd',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
     flex: 1,
     marginHorizontal: 4,
     alignItems: 'center',
   },
   presetButtonActive: {
-    borderColor: '#007AFF',
-    backgroundColor: '#E3F2FD',
+    backgroundColor: 'rgba(0, 255, 157, 0.15)',
+    borderColor: '#00FF9D',
+    shadowColor: '#00FF9D',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
   presetButtonDisabled: {
-    opacity: 0.6,
+    opacity: 0.4,
   },
   presetButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
+    fontSize: 16,
+    fontWeight: '800',
+    color: 'rgba(255, 255, 255, 0.8)',
   },
   presetButtonTextActive: {
-    color: '#007AFF',
+    color: '#00FF9D',
+    textShadowColor: '#00FF9D',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 5,
   },
   modeSection: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   modeTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 12,
-    color: '#333',
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 16,
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   modeButtons: {
     flexDirection: 'row',
@@ -901,41 +1311,48 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   modeButton: {
-    backgroundColor: '#f8f9fa',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#ddd',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
     width: '48%',
-    marginBottom: 8,
+    marginBottom: 12,
     alignItems: 'center',
   },
   modeButtonActive: {
-    borderColor: '#007AFF',
-    backgroundColor: '#E3F2FD',
+    backgroundColor: 'rgba(0, 255, 157, 0.15)',
+    borderColor: '#00FF9D',
+    shadowColor: '#00FF9D',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
   modeButtonDisabled: {
-    opacity: 0.5,
+    opacity: 0.4,
   },
   modeButtonLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 2,
+    fontSize: 16,
+    fontWeight: '800',
+    color: 'rgba(255, 255, 255, 0.9)',
+    marginBottom: 4,
+    letterSpacing: 0.5,
   },
   modeButtonDesc: {
-    fontSize: 11,
-    color: '#666',
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.6)',
     textAlign: 'center',
+    fontWeight: '500',
   },
+  // Terrain Indicator Styles
   terrainIndicator: {
-    marginTop: 16,
-    padding: 12,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
+    marginTop: 20,
+    padding: 16,
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e9ecef',
+    borderColor: 'rgba(76, 175, 80, 0.3)',
   },
   terrainRow: {
     flexDirection: 'row',
@@ -944,19 +1361,22 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   terrainEmoji: {
-    fontSize: 24,
-    marginRight: 8,
+    fontSize: 28,
+    marginRight: 12,
   },
   terrainText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginRight: 8,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#4CAF50',
+    marginRight: 12,
+    textShadowColor: 'rgba(76, 175, 80, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   gradeText: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '500',
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontWeight: '600',
   },
   adjustmentRow: {
     flexDirection: 'row',
@@ -964,85 +1384,97 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   adjustmentText: {
-    fontSize: 12,
-    color: '#666',
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.7)',
     marginRight: 8,
+    fontWeight: '500',
   },
   confidenceDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 4,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 6,
   },
   confidenceText: {
-    fontSize: 11,
-    color: '#666',
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.6)',
     textTransform: 'capitalize',
+    fontWeight: '600',
   },
   gpsStatus: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#FF9800',
     textAlign: 'center',
-    marginTop: 4,
+    marginTop: 8,
+    fontWeight: '600',
   },
   terrainInfo: {
     marginTop: 16,
-    padding: 16,
-    backgroundColor: '#E8F5E8',
-    borderRadius: 8,
+    padding: 20,
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#4CAF50',
+    borderColor: 'rgba(76, 175, 80, 0.3)',
   },
   terrainInfoTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#2E7D32',
-    marginBottom: 8,
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#4CAF50',
+    marginBottom: 12,
     textAlign: 'center',
+    letterSpacing: 0.5,
   },
   terrainInfoText: {
-    fontSize: 13,
-    color: '#388E3C',
-    marginBottom: 8,
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginBottom: 12,
     textAlign: 'center',
+    lineHeight: 20,
   },
   terrainInfoBullet: {
-    fontSize: 12,
-    color: '#388E3C',
-    marginBottom: 4,
-    paddingLeft: 8,
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.7)',
+    marginBottom: 6,
+    paddingLeft: 12,
+    lineHeight: 18,
   },
   terrainInfoNote: {
-    fontSize: 11,
-    color: '#666',
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.5)',
     fontStyle: 'italic',
     textAlign: 'center',
-    marginTop: 8,
+    marginTop: 12,
   },
   // Fartlek Configuration Styles
   fartlekConfig: {
     marginTop: 16,
-    padding: 16,
-    backgroundColor: '#FFF3E0',
-    borderRadius: 8,
+    padding: 20,
+    backgroundColor: 'rgba(255, 152, 0, 0.1)',
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#FF9800',
+    borderColor: 'rgba(255, 152, 0, 0.3)',
   },
   fartlekConfigTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#E65100',
-    marginBottom: 12,
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#FF9800',
+    marginBottom: 16,
     textAlign: 'center',
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(255, 152, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   configRow: {
-    marginBottom: 16,
+    marginBottom: 20,
   },
   configLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 12,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   difficultyButtons: {
     flexDirection: 'row',
@@ -1050,176 +1482,435 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   difficultyButton: {
-    backgroundColor: '#f8f9fa',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: 'rgba(255, 255, 255, 0.15)',
     width: '48%',
-    marginBottom: 8,
+    marginBottom: 12,
     alignItems: 'center',
   },
   difficultyButtonActive: {
+    backgroundColor: 'rgba(255, 152, 0, 0.2)',
     borderColor: '#FF9800',
-    backgroundColor: '#FFF3E0',
+    shadowColor: '#FF9800',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
   difficultyButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 2,
+    fontSize: 14,
+    fontWeight: '700',
+    color: 'rgba(255, 255, 255, 0.9)',
+    marginBottom: 4,
+    letterSpacing: 0.3,
   },
   difficultyButtonTextActive: {
-    color: '#E65100',
+    color: '#FF9800',
+    textShadowColor: 'rgba(255, 152, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 3,
   },
   difficultyButtonDesc: {
-    fontSize: 10,
-    color: '#666',
+    fontSize: 11,
+    color: 'rgba(255, 255, 255, 0.6)',
     textAlign: 'center',
+    fontWeight: '500',
   },
   coachingToggle: {
-    backgroundColor: '#f8f9fa',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: 'rgba(255, 255, 255, 0.15)',
     alignItems: 'center',
   },
   coachingToggleActive: {
-    borderColor: '#4CAF50',
-    backgroundColor: '#E8F5E8',
+    backgroundColor: 'rgba(76, 175, 80, 0.15)',
+    borderColor: 'rgba(76, 175, 80, 0.4)',
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
   },
   coachingToggleText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
     marginBottom: 4,
+    letterSpacing: 0.3,
   },
   coachingToggleDesc: {
-    fontSize: 12,
-    color: '#666',
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontWeight: '500',
   },
   fartlekInfo: {
-    marginTop: 8,
-    padding: 12,
-    backgroundColor: '#FFF8E1',
-    borderRadius: 6,
+    marginTop: 12,
+    padding: 16,
+    backgroundColor: 'rgba(255, 193, 7, 0.08)',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 193, 7, 0.2)',
   },
   fartlekInfoText: {
-    fontSize: 12,
-    color: '#F57F17',
-    marginBottom: 8,
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginBottom: 12,
     textAlign: 'center',
+    lineHeight: 18,
   },
   fartlekInfoBullet: {
-    fontSize: 11,
-    color: '#F57F17',
-    marginBottom: 2,
-    paddingLeft: 8,
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.7)',
+    marginBottom: 4,
+    paddingLeft: 12,
+    lineHeight: 16,
   },
   // Workout Status Styles
   workoutStatus: {
     marginTop: 16,
-    padding: 16,
-    backgroundColor: '#E3F2FD',
-    borderRadius: 8,
+    padding: 20,
+    backgroundColor: 'rgba(33, 150, 243, 0.1)',
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#2196F3',
+    borderColor: 'rgba(33, 150, 243, 0.3)',
   },
   workoutStatusTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1565C0',
-    marginBottom: 12,
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#2196F3',
+    marginBottom: 16,
     textAlign: 'center',
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(33, 150, 243, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   statusRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
   },
   statusLabel: {
-    fontSize: 14,
-    color: '#1976D2',
-    fontWeight: '500',
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontWeight: '600',
+    letterSpacing: 0.3,
   },
   statusValue: {
-    fontSize: 14,
-    color: '#0D47A1',
-    fontWeight: '600',
+    fontSize: 16,
+    color: '#FFFFFF',
+    fontWeight: '800',
+    textShadowColor: 'rgba(33, 150, 243, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   currentPhase: {
-    marginTop: 12,
-    padding: 12,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 6,
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#BBDEFB',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   phaseHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
   },
   phaseIntensity: {
-    fontSize: 20,
-    marginRight: 8,
+    fontSize: 24,
+    marginRight: 12,
   },
   phaseType: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1565C0',
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#2196F3',
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(33, 150, 243, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   phaseProgress: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
   },
   progressBar: {
     flex: 1,
-    height: 8,
-    backgroundColor: '#E0E0E0',
-    borderRadius: 4,
-    marginRight: 8,
+    height: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 5,
+    marginRight: 12,
+    overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#4CAF50',
-    borderRadius: 4,
+    backgroundColor: '#00FF9D',
+    borderRadius: 5,
+    shadowColor: '#00FF9D',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
   },
   progressText: {
-    fontSize: 12,
-    color: '#666',
-    fontWeight: '600',
-    minWidth: 35,
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontWeight: '700',
+    minWidth: 40,
   },
   phaseStats: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
   phaseStat: {
-    fontSize: 11,
-    color: '#666',
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontWeight: '600',
   },
   workoutProgress: {
-    marginTop: 12,
-    padding: 8,
-    backgroundColor: '#F5F5F5',
-    borderRadius: 4,
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: 8,
   },
   workoutProgressLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 4,
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.7)',
+    marginBottom: 8,
     textAlign: 'center',
+    fontWeight: '600',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
   },
   workoutProgressText: {
-    fontSize: 11,
-    color: '#666',
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.6)',
     textAlign: 'center',
-    marginTop: 4,
+    marginTop: 8,
+    fontWeight: '600',
+  },
+  // Interval Configuration Styles
+  intervalConfig: {
+    marginTop: 16,
+    padding: 20,
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(76, 175, 80, 0.3)',
+  },
+  intervalConfigTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#4CAF50',
+    marginBottom: 16,
+    textAlign: 'center',
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(76, 175, 80, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  intervalInputs: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 12,
+  },
+  cadenceInputs: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 12,
+  },
+  inputGroup: {
+    flex: 1,
+    marginHorizontal: 6,
+    alignItems: 'center',
+  },
+  inputLabel: {
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginBottom: 8,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+  },
+  numberInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    overflow: 'hidden',
+  },
+  numberButton: {
+    width: 36,
+    height: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  numberButtonText: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#00FF9D',
+    textShadowColor: 'rgba(0, 255, 157, 0.3)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 3,
+  },
+  numberValue: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    minWidth: 36,
+    textAlign: 'center',
+    paddingHorizontal: 8,
+  },
+  intervalInfo: {
+    marginTop: 12,
+    padding: 16,
+    backgroundColor: 'rgba(139, 195, 74, 0.08)',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 195, 74, 0.2)',
+  },
+  intervalInfoText: {
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginBottom: 12,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  intervalInfoBullet: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.7)',
+    marginBottom: 4,
+    paddingLeft: 12,
+    lineHeight: 16,
+  },
+  // Progressive Configuration Styles
+  progressiveConfig: {
+    marginTop: 16,
+    padding: 20,
+    backgroundColor: 'rgba(33, 150, 243, 0.1)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(33, 150, 243, 0.3)',
+  },
+  progressiveConfigTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#2196F3',
+    marginBottom: 16,
+    textAlign: 'center',
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(33, 150, 243, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  durationButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 12,
+  },
+  durationButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    flex: 1,
+    marginHorizontal: 3,
+    alignItems: 'center',
+  },
+  durationButtonActive: {
+    backgroundColor: 'rgba(33, 150, 243, 0.2)',
+    borderColor: '#2196F3',
+    shadowColor: '#2196F3',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  durationButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: 'rgba(255, 255, 255, 0.9)',
+    letterSpacing: 0.3,
+  },
+  durationButtonTextActive: {
+    color: '#2196F3',
+    textShadowColor: 'rgba(33, 150, 243, 0.3)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 3,
+  },
+  progressionButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 12,
+  },
+  progressionButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    flex: 1,
+    marginHorizontal: 3,
+    alignItems: 'center',
+  },
+  progressionButtonActive: {
+    backgroundColor: 'rgba(33, 150, 243, 0.2)',
+    borderColor: '#2196F3',
+    shadowColor: '#2196F3',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  progressionButtonText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: 'rgba(255, 255, 255, 0.9)',
+    marginBottom: 4,
+    letterSpacing: 0.3,
+  },
+  progressionButtonTextActive: {
+    color: '#2196F3',
+    textShadowColor: 'rgba(33, 150, 243, 0.3)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 3,
+  },
+  progressionButtonDesc: {
+    fontSize: 10,
+    color: 'rgba(255, 255, 255, 0.6)',
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  progressiveInfo: {
+    marginTop: 12,
+    padding: 16,
+    backgroundColor: 'rgba(63, 81, 181, 0.08)',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(63, 81, 181, 0.2)',
+  },
+  progressiveInfoText: {
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginBottom: 12,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  progressiveInfoBullet: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.7)',
+    marginBottom: 4,
+    paddingLeft: 12,
+    lineHeight: 16,
   },
 });

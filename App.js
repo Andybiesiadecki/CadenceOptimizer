@@ -13,18 +13,51 @@ const Tab = createBottomTabNavigator();
 
 export default function App() {
   return (
-    <NavigationContainer>
-      <StatusBar style="auto" />
+    <NavigationContainer
+      theme={{
+        dark: true,
+        colors: {
+          primary: '#00FF9D',
+          background: '#0A0A0A',
+          card: 'rgba(255, 255, 255, 0.05)',
+          text: '#FFFFFF',
+          border: 'rgba(255, 255, 255, 0.1)',
+          notification: '#00FF9D',
+        },
+      }}
+    >
+      <StatusBar style="light" backgroundColor="#0A0A0A" />
       <Tab.Navigator
         screenOptions={{
-          tabBarActiveTintColor: '#007AFF',
-          tabBarInactiveTintColor: 'gray',
-          headerStyle: {
-            backgroundColor: '#007AFF',
+          tabBarActiveTintColor: '#00FF9D',
+          tabBarInactiveTintColor: 'rgba(255, 255, 255, 0.5)',
+          tabBarStyle: {
+            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+            borderTopColor: 'rgba(255, 255, 255, 0.1)',
+            borderTopWidth: 1,
+            paddingTop: 8,
+            paddingBottom: 8,
+            height: 70,
           },
-          headerTintColor: '#fff',
+          tabBarLabelStyle: {
+            fontSize: 12,
+            fontWeight: '600',
+            letterSpacing: 0.5,
+            textTransform: 'uppercase',
+          },
+          headerStyle: {
+            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+            borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+            borderBottomWidth: 1,
+            shadowColor: 'transparent',
+            elevation: 0,
+          },
+          headerTintColor: '#FFFFFF',
           headerTitleStyle: {
-            fontWeight: 'bold',
+            fontWeight: '800',
+            fontSize: 20,
+            letterSpacing: 1,
+            textTransform: 'uppercase',
           },
         }}
       >
@@ -32,40 +65,45 @@ export default function App() {
           name="Home" 
           component={HomeScreen}
           options={{ 
-            title: 'Cadence Optimizer',
-            tabBarIcon: ({ color }) => '🏠'
+            title: 'CADENCE OPTIMIZER',
+            tabBarIcon: ({ color }) => '🏠',
+            tabBarLabel: 'HOME'
           }}
         />
         <Tab.Screen 
           name="Analysis" 
           component={AnalysisScreen}
           options={{ 
-            title: 'FIT Analysis',
-            tabBarIcon: ({ color }) => '📊'
+            title: 'FIT ANALYSIS',
+            tabBarIcon: ({ color }) => '📊',
+            tabBarLabel: 'ANALYSIS'
           }}
         />
         <Tab.Screen 
           name="Metronome" 
           component={MetronomeScreen}
           options={{ 
-            title: 'Metronome',
-            tabBarIcon: ({ color }) => '🎵'
+            title: 'METRONOME',
+            tabBarIcon: ({ color }) => '🎵',
+            tabBarLabel: 'METRONOME'
           }}
         />
         <Tab.Screen 
           name="Targets" 
           component={TargetsScreen}
           options={{ 
-            title: 'Race Targets',
-            tabBarIcon: ({ color }) => '🎯'
+            title: 'RACE TARGETS',
+            tabBarIcon: ({ color }) => '🎯',
+            tabBarLabel: 'TARGETS'
           }}
         />
         <Tab.Screen 
           name="Profile" 
           component={RunnerProfileSetup}
           options={{ 
-            title: 'Profile Setup',
-            tabBarIcon: ({ color }) => '👤'
+            title: 'RUNNER PROFILE',
+            tabBarIcon: ({ color }) => '👤',
+            tabBarLabel: 'PROFILE'
           }}
         />
       </Tab.Navigator>
