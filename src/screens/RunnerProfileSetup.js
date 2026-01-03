@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert, Platform } from 'react-native';
 import { saveRunnerProfile } from '../utils/storage';
 
 export default function RunnerProfileSetup({ navigation, onComplete }) {
@@ -204,7 +204,14 @@ export default function RunnerProfileSetup({ navigation, onComplete }) {
         version: '2.0'
       };
 
-      await saveRunnerProfile(profileData);
+      console.log('Saving runner profile:', profileData);
+      const saveResult = await saveRunnerProfile(profileData);
+      
+      if (!saveResult) {
+        throw new Error('Failed to save profile to storage');
+      }
+      
+      console.log('Profile saved successfully');
       
       Alert.alert(
         'Profile Created! 🎉',
@@ -213,10 +220,14 @@ export default function RunnerProfileSetup({ navigation, onComplete }) {
           {
             text: 'Start Running!',
             onPress: () => {
-              if (onComplete) {
-                onComplete(profileData);
-              } else if (navigation) {
-                navigation.navigate('Home');
+              try {
+                if (onComplete) {
+                  onComplete(profileData);
+                } else if (navigation && navigation.navigate) {
+                  navigation.navigate('Home');
+                }
+              } catch (navError) {
+                console.error('Navigation error:', navError);
               }
             },
           },
