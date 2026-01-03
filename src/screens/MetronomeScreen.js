@@ -6,6 +6,8 @@ import LocationService from '../services/LocationService';
 import TerrainDetector from '../services/TerrainDetector';
 import WorkoutEngine from '../services/WorkoutEngine';
 import CoachingVoiceService from '../services/CoachingVoiceService';
+import MusicLibraryService from '../services/MusicLibraryService';
+import SpotifyService from '../services/SpotifyService';
 
 export default function MetronomeScreen() {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -13,7 +15,17 @@ export default function MetronomeScreen() {
   const [currentBeat, setCurrentBeat] = useState(0);
   const [volume, setVolume] = useState(0.8);
   const [audioEnabled, setAudioEnabled] = useState(true);
-  const [mode, setMode] = useState('basic'); // basic, interval, progressive, terrain, fartlek
+  const [mode, setMode] = useState('basic'); // basic, interval, progressive, terrain, fartlek, music
+  
+  // Music mode states
+  const [musicMode, setMusicMode] = useState(false); // false = metronome, true = music
+  const [musicLibraryLoaded, setMusicLibraryLoaded] = useState(false);
+  const [currentTrack, setCurrentTrack] = useState(null);
+  const [isGeneratingPlaylist, setIsGeneratingPlaylist] = useState(false);
+  const [savedPlaylists, setSavedPlaylists] = useState([]);
+  const [currentPlaylist, setCurrentPlaylist] = useState(null);
+  const [spotifyAuthenticated, setSpotifyAuthenticated] = useState(false);
+  const [spotifyUser, setSpotifyUser] = useState(null);
   
   // Fartlek mode states
   const [workoutStatus, setWorkoutStatus] = useState({ active: false });
@@ -68,14 +80,80 @@ export default function MetronomeScreen() {
     // Initialize coaching voice
     CoachingVoiceService.initialize();
 
+    // Initialize music library service
+    initializeMusicService();
+
     return () => {
       // Cleanup when component unmounts
       MetronomeService.cleanup();
       WorkoutEngine.stopWorkout();
       CoachingVoiceService.stopSpeaking();
+      MusicLibraryService.cleanup();
       stopLocationTracking();
     };
   }, []);
+
+  // Initialize music service
+  const initializeMusicService = async () => {
+    try {
+      MusicLibraryService.setCallbacks({
+        onTrackChange: handleTrackChange,
+        onPlaybackStatusUpdate: handlePlaybackStatusUpdate,
+        onPlaylistGenerated: handlePlaylistGenerated,
+        onSpotifyAuthChange: handleSpotifyAuthChange,
+      });
+
+      await MusicLibraryService.initialize();
+      const playlists = await MusicLibraryService.getSavedPlaylists();
+      setSavedPlaylists(playlists);
+      
+      // Check Spotify authentication status
+      const spotifyStatus = SpotifyService.getStatus();
+      setSpotifyAuthenticated(spotifyStatus.isAuthenticated);
+      setSpotifyUser(spotifyStatus.userProfile);
+      
+      console.log('Music service initialized successfully');
+    } catch (error) {
+      console.error('Failed to initialize music service:', error);
+    }
+  };
+
+  // Spotify Authentication Callback
+  const handleSpotifyAuthChange = (isAuthenticated, userProfile) => {
+    console.log('Spotify auth changed:', isAuthenticated);
+    setSpotifyAuthenticated(isAuthenticated);
+    setSpotifyUser(userProfile);
+  };
+
+  // Music Service Callbacks
+  const handleTrackChange = (track) => {
+    console.log(`Now playing: ${track.title}`);
+    setCurrentTrack(track);
+  };
+
+  const handlePlaybackStatusUpdate = (status) => {
+    // Handle playback status updates
+    console.log('Playback status:', status.isLoaded, status.isPlaying);
+  };
+
+  const handlePlaylistGenerated = (playlist) => {
+    console.log(`Playlist generated: ${playlist.name} with ${playlist.tracks.length} songs`);
+    setCurrentPlaylist(playlist);
+    setIsGeneratingPlaylist(false);
+    
+    // Update saved playlists
+    setSavedPlaylists(prev => [
+      { 
+        id: playlist.id,
+        name: playlist.name,
+        targetCadence: playlist.targetCadence,
+        trackCount: playlist.tracks.length,
+        duration: playlist.actualDuration,
+        createdAt: playlist.createdAt,
+      },
+      ...prev
+    ]);
+  };
 
   // Workout Engine Callbacks
   const handlePhaseChange = (phase, phaseIndex, totalPhases) => {
@@ -159,7 +237,12 @@ export default function MetronomeScreen() {
 
   const toggleMetronome = async () => {
     if (isPlaying) {
-      MetronomeService.stop();
+      // Stop current session
+      if (musicMode) {
+        await MusicLibraryService.stop();
+      } else {
+        MetronomeService.stop();
+      }
       WorkoutEngine.stopWorkout();
       setIsPlaying(false);
       setCurrentBeat(0);
@@ -170,23 +253,88 @@ export default function MetronomeScreen() {
         await stopLocationTracking();
       }
     } else {
+      // Start new session
+      
       // Start location tracking if in terrain mode
       if (mode === 'terrain') {
         await startLocationTracking();
       }
       
-      // Start Fartlek workout if in fartlek mode
-      if (mode === 'fartlek') {
-        await startFartlekWorkout();
-      } else if (mode === 'interval') {
-        await startIntervalWorkout();
-      } else if (mode === 'progressive') {
-        await startProgressiveWorkout();
+      if (musicMode) {
+        // Music mode - generate and play playlist
+        await startMusicMode();
       } else {
-        await MetronomeService.start(cadence, handleBeat);
+        // Metronome mode - start workout or basic metronome
+        if (mode === 'fartlek') {
+          await startFartlekWorkout();
+        } else if (mode === 'interval') {
+          await startIntervalWorkout();
+        } else if (mode === 'progressive') {
+          await startProgressiveWorkout();
+        } else {
+          await MetronomeService.start(cadence, handleBeat);
+        }
       }
       
       setIsPlaying(true);
+    }
+  };
+
+  // Start music mode
+  const startMusicMode = async () => {
+    try {
+      console.log(`Starting music mode for ${cadence} SPM`);
+      
+      // Load music library if not already loaded
+      if (!musicLibraryLoaded) {
+        console.log('Loading music library...');
+        await MusicLibraryService.loadMusicLibrary();
+        setMusicLibraryLoaded(true);
+      }
+
+      // Generate playlist if none exists or doesn't match current cadence
+      if (!currentPlaylist || currentPlaylist.targetCadence !== cadence) {
+        setIsGeneratingPlaylist(true);
+        
+        const playlist = await MusicLibraryService.generateCadencePlaylist(cadence, 30, {
+          tolerance: 10,
+          minSongs: 5,
+          includeWarmup: true,
+          includeCooldown: true,
+        });
+
+        if (!playlist || playlist.tracks.length === 0) {
+          Alert.alert(
+            'No Matching Songs',
+            `Couldn't find enough songs matching ${cadence} SPM. Try a different cadence or add more music to your library.`,
+            [{ text: 'OK' }]
+          );
+          setIsGeneratingPlaylist(false);
+          return;
+        }
+
+        setCurrentPlaylist(playlist);
+        setIsGeneratingPlaylist(false);
+      }
+
+      // Start playing the playlist
+      if (currentPlaylist && currentPlaylist.tracks.length > 0) {
+        MusicLibraryService.currentPlaylist = currentPlaylist.tracks;
+        await MusicLibraryService.playTrack(currentPlaylist.tracks[0]);
+        
+        // Start workout if in workout mode
+        if (mode === 'fartlek') {
+          await startFartlekWorkout();
+        } else if (mode === 'interval') {
+          await startIntervalWorkout();
+        } else if (mode === 'progressive') {
+          await startProgressiveWorkout();
+        }
+      }
+    } catch (error) {
+      console.error('Failed to start music mode:', error);
+      Alert.alert('Music Error', 'Failed to start music mode. Please try again.');
+      setIsGeneratingPlaylist(false);
     }
   };
 
@@ -387,6 +535,89 @@ export default function MetronomeScreen() {
     }
   };
 
+  // Generate playlist for current cadence
+  const generatePlaylistForCurrentCadence = async () => {
+    try {
+      setIsGeneratingPlaylist(true);
+      
+      // Load music library if not already loaded
+      if (!musicLibraryLoaded) {
+        await MusicLibraryService.loadMusicLibrary();
+        setMusicLibraryLoaded(true);
+      }
+
+      const playlist = await MusicLibraryService.generateCadencePlaylist(cadence, 30, {
+        tolerance: 10,
+        minSongs: 5,
+        includeWarmup: true,
+        includeCooldown: true,
+      });
+
+      if (!playlist || playlist.tracks.length === 0) {
+        Alert.alert(
+          'No Matching Songs',
+          `Couldn't find enough songs matching ${cadence} SPM. Try a different cadence or add more music to your library.`,
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error) {
+      console.error('Failed to generate playlist:', error);
+      Alert.alert('Error', 'Failed to generate playlist. Please try again.');
+    } finally {
+      setIsGeneratingPlaylist(false);
+    }
+  };
+
+  // Load music library
+  const loadMusicLibrary = async () => {
+    try {
+      console.log('Loading music library...');
+      await MusicLibraryService.loadMusicLibrary();
+      setMusicLibraryLoaded(true);
+      console.log('Music library loaded successfully');
+    } catch (error) {
+      console.error('Failed to load music library:', error);
+      Alert.alert('Error', 'Failed to load music library. Please check permissions.');
+    }
+  };
+
+  // Load saved playlist
+  const loadSavedPlaylist = async (playlistId) => {
+    try {
+      const playlist = await MusicLibraryService.loadPlaylist(playlistId);
+      if (playlist) {
+        setCurrentPlaylist(playlist);
+        console.log(`Loaded playlist: ${playlist.name}`);
+      }
+    } catch (error) {
+      console.error('Failed to load saved playlist:', error);
+    }
+  };
+
+  // Authenticate with Spotify
+  const authenticateSpotify = async () => {
+    try {
+      console.log('Starting Spotify authentication...');
+      const success = await MusicLibraryService.authenticateSpotify();
+      if (success) {
+        Alert.alert('Success', 'Connected to Spotify! You can now access millions of songs with accurate BPM data.');
+      }
+    } catch (error) {
+      console.error('Spotify authentication failed:', error);
+      Alert.alert('Authentication Failed', 'Could not connect to Spotify. Please try again.');
+    }
+  };
+
+  // Logout from Spotify
+  const logoutSpotify = async () => {
+    try {
+      await SpotifyService.logout();
+      Alert.alert('Logged Out', 'Disconnected from Spotify.');
+    } catch (error) {
+      console.error('Spotify logout failed:', error);
+    }
+  };
+
   // Get confidence color
   const getConfidenceColor = (confidence) => {
     switch (confidence) {
@@ -581,6 +812,46 @@ export default function MetronomeScreen() {
             ))}
           </View>
           
+          {/* Music Mode Toggle */}
+          <View style={styles.musicModeSection}>
+            <Text style={styles.musicModeTitle}>🎵 Audio Mode</Text>
+            <View style={styles.musicModeToggle}>
+              <TouchableOpacity
+                style={[
+                  styles.musicModeButton,
+                  !musicMode && styles.musicModeButtonActive
+                ]}
+                onPress={() => setMusicMode(false)}
+                disabled={isPlaying}
+              >
+                <Text style={[
+                  styles.musicModeButtonText,
+                  !musicMode && styles.musicModeButtonTextActive
+                ]}>
+                  🎵 Metronome
+                </Text>
+                <Text style={styles.musicModeButtonDesc}>Audio beats</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[
+                  styles.musicModeButton,
+                  musicMode && styles.musicModeButtonActive
+                ]}
+                onPress={() => setMusicMode(true)}
+                disabled={isPlaying}
+              >
+                <Text style={[
+                  styles.musicModeButtonText,
+                  musicMode && styles.musicModeButtonTextActive
+                ]}>
+                  🎶 Music
+                </Text>
+                <Text style={styles.musicModeButtonDesc}>Songs at cadence</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          
           {/* Fartlek Mode Configuration */}
           {mode === 'fartlek' && (
             <View style={styles.fartlekConfig}>
@@ -639,6 +910,153 @@ export default function MetronomeScreen() {
                 <Text style={styles.fartlekInfoBullet}>• Duration: 30 minutes</Text>
                 <Text style={styles.fartlekInfoBullet}>• Base cadence: {cadence} SPM</Text>
                 <Text style={styles.fartlekInfoBullet}>• Terrain aware: GPS adjustments included</Text>
+              </View>
+            </View>
+          )}
+
+          {/* Music Mode Configuration */}
+          {musicMode && (
+            <View style={styles.musicConfig}>
+              <Text style={styles.musicConfigTitle}>🎶 Music Configuration</Text>
+              
+              {/* Spotify Integration */}
+              <View style={styles.spotifySection}>
+                <Text style={styles.spotifySectionTitle}>🎵 Spotify Integration</Text>
+                
+                {spotifyAuthenticated ? (
+                  <View style={styles.spotifyConnected}>
+                    <View style={styles.spotifyUserInfo}>
+                      <Text style={styles.spotifyUserName}>
+                        ✅ Connected as {spotifyUser?.display_name || 'Spotify User'}
+                      </Text>
+                      <Text style={styles.spotifyUserDetails}>
+                        Access to millions of songs with accurate BPM data
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.spotifyLogoutButton}
+                      onPress={logoutSpotify}
+                      disabled={isPlaying}
+                    >
+                      <Text style={styles.spotifyLogoutButtonText}>Disconnect</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <View style={styles.spotifyDisconnected}>
+                    <Text style={styles.spotifyBenefits}>
+                      Connect to Spotify for:
+                    </Text>
+                    <Text style={styles.spotifyBenefit}>• Millions of songs with accurate BPM</Text>
+                    <Text style={styles.spotifyBenefit}>• Professional audio analysis</Text>
+                    <Text style={styles.spotifyBenefit}>• Create playlists in your account</Text>
+                    <Text style={styles.spotifyBenefit}>• High-quality streaming (Premium)</Text>
+                    
+                    <TouchableOpacity
+                      style={styles.spotifyConnectButton}
+                      onPress={authenticateSpotify}
+                      disabled={isPlaying}
+                    >
+                      <Text style={styles.spotifyConnectButtonText}>🎵 Connect to Spotify</Text>
+                      <Text style={styles.spotifyConnectButtonDesc}>Free account works great!</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+
+              {/* Current Track Display */}
+              {currentTrack && (
+                <View style={styles.currentTrack}>
+                  <Text style={styles.currentTrackTitle}>Now Playing:</Text>
+                  <Text style={styles.currentTrackName}>{currentTrack.title}</Text>
+                  <Text style={styles.currentTrackArtist}>{currentTrack.artist}</Text>
+                  <Text style={styles.currentTrackBpm}>
+                    {currentTrack.bpm} BPM • {currentTrack.matchType} match • {currentTrack.matchQuality}% quality
+                  </Text>
+                </View>
+              )}
+
+              {/* Playlist Status */}
+              {currentPlaylist && (
+                <View style={styles.playlistStatus}>
+                  <Text style={styles.playlistStatusTitle}>Current Playlist:</Text>
+                  <Text style={styles.playlistStatusName}>{currentPlaylist.name}</Text>
+                  <Text style={styles.playlistStatusInfo}>
+                    {currentPlaylist.tracks.length} songs • {Math.round(currentPlaylist.actualDuration / 60)} minutes
+                  </Text>
+                </View>
+              )}
+
+              {/* Generate Playlist Button */}
+              <TouchableOpacity
+                style={[
+                  styles.generatePlaylistButton,
+                  isGeneratingPlaylist && styles.generatePlaylistButtonDisabled
+                ]}
+                onPress={() => generatePlaylistForCurrentCadence()}
+                disabled={isGeneratingPlaylist || isPlaying}
+              >
+                <Text style={styles.generatePlaylistButtonText}>
+                  {isGeneratingPlaylist 
+                    ? '🔄 Generating Playlist...' 
+                    : `🎵 Generate ${cadence} SPM Playlist`
+                  }
+                </Text>
+                <Text style={styles.generatePlaylistButtonDesc}>
+                  Find songs matching your target cadence
+                </Text>
+              </TouchableOpacity>
+
+              {/* Saved Playlists */}
+              {savedPlaylists.length > 0 && (
+                <View style={styles.savedPlaylists}>
+                  <Text style={styles.savedPlaylistsTitle}>Saved Playlists:</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    {savedPlaylists.slice(0, 5).map((playlist) => (
+                      <TouchableOpacity
+                        key={playlist.id}
+                        style={[
+                          styles.savedPlaylistItem,
+                          currentPlaylist?.id === playlist.id && styles.savedPlaylistItemActive
+                        ]}
+                        onPress={() => loadSavedPlaylist(playlist.id)}
+                        disabled={isPlaying}
+                      >
+                        <Text style={styles.savedPlaylistCadence}>{playlist.targetCadence} SPM</Text>
+                        <Text style={styles.savedPlaylistTracks}>{playlist.trackCount} songs</Text>
+                        <Text style={styles.savedPlaylistDuration}>{Math.round(playlist.duration / 60)}min</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+
+              {/* Music Library Status */}
+              <View style={styles.musicLibraryStatus}>
+                <Text style={styles.musicLibraryStatusText}>
+                  📱 Library: {musicLibraryLoaded ? `${MusicLibraryService.musicLibrary.length} songs` : 'Not loaded'}
+                </Text>
+                <Text style={styles.musicLibraryStatusText}>
+                  🎯 BPM Cache: {MusicLibraryService.bpmCache.size} analyzed
+                </Text>
+                {!musicLibraryLoaded && (
+                  <TouchableOpacity
+                    style={styles.loadLibraryButton}
+                    onPress={loadMusicLibrary}
+                    disabled={isPlaying}
+                  >
+                    <Text style={styles.loadLibraryButtonText}>📚 Load Music Library</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              <View style={styles.musicInfo}>
+                <Text style={styles.musicInfoText}>
+                  Music mode plays songs from your device that match your target cadence. 
+                  The app analyzes BPM and finds the best matches for your workout.
+                </Text>
+                <Text style={styles.musicInfoBullet}>• 1:1 ratio: 180 SPM = 180 BPM songs</Text>
+                <Text style={styles.musicInfoBullet}>• 2:1 ratio: 180 SPM = 90 BPM songs (double time)</Text>
+                <Text style={styles.musicInfoBullet}>• Includes warmup and cooldown tracks</Text>
               </View>
             </View>
           )}
@@ -1912,5 +2330,368 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     paddingLeft: 12,
     lineHeight: 16,
+  },
+  // Music Mode Styles
+  musicModeSection: {
+    marginTop: 20,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  musicModeTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 12,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    textAlign: 'center',
+  },
+  musicModeToggle: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  musicModeButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    flex: 1,
+    marginHorizontal: 6,
+    alignItems: 'center',
+  },
+  musicModeButtonActive: {
+    backgroundColor: 'rgba(138, 43, 226, 0.15)',
+    borderColor: '#8A2BE2',
+    shadowColor: '#8A2BE2',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  musicModeButtonText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: 'rgba(255, 255, 255, 0.9)',
+    marginBottom: 4,
+    letterSpacing: 0.5,
+  },
+  musicModeButtonTextActive: {
+    color: '#8A2BE2',
+    textShadowColor: 'rgba(138, 43, 226, 0.3)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 3,
+  },
+  musicModeButtonDesc: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.6)',
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  // Music Configuration Styles
+  musicConfig: {
+    marginTop: 16,
+    padding: 20,
+    backgroundColor: 'rgba(138, 43, 226, 0.1)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(138, 43, 226, 0.3)',
+  },
+  musicConfigTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#8A2BE2',
+    marginBottom: 16,
+    textAlign: 'center',
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(138, 43, 226, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  currentTrack: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  currentTrackTitle: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.7)',
+    marginBottom: 8,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+  },
+  currentTrackName: {
+    fontSize: 18,
+    color: '#FFFFFF',
+    fontWeight: '800',
+    marginBottom: 4,
+    textShadowColor: 'rgba(138, 43, 226, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  currentTrackArtist: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginBottom: 8,
+    fontWeight: '600',
+  },
+  currentTrackBpm: {
+    fontSize: 12,
+    color: '#8A2BE2',
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
+  playlistStatus: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  playlistStatusTitle: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.7)',
+    marginBottom: 8,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+  },
+  playlistStatusName: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  playlistStatusInfo: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontWeight: '500',
+  },
+  generatePlaylistButton: {
+    backgroundColor: 'rgba(138, 43, 226, 0.2)',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(138, 43, 226, 0.4)',
+    alignItems: 'center',
+    marginBottom: 16,
+    shadowColor: '#8A2BE2',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+  },
+  generatePlaylistButtonDisabled: {
+    opacity: 0.5,
+  },
+  generatePlaylistButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#8A2BE2',
+    marginBottom: 4,
+    letterSpacing: 0.3,
+  },
+  generatePlaylistButtonDesc: {
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontWeight: '500',
+  },
+  savedPlaylists: {
+    marginBottom: 16,
+  },
+  savedPlaylistsTitle: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginBottom: 12,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+  },
+  savedPlaylistItem: {
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: 10,
+    padding: 12,
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    alignItems: 'center',
+    minWidth: 80,
+  },
+  savedPlaylistItemActive: {
+    backgroundColor: 'rgba(138, 43, 226, 0.2)',
+    borderColor: '#8A2BE2',
+    shadowColor: '#8A2BE2',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  savedPlaylistCadence: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#8A2BE2',
+    marginBottom: 2,
+  },
+  savedPlaylistTracks: {
+    fontSize: 11,
+    color: 'rgba(255, 255, 255, 0.7)',
+    marginBottom: 2,
+    fontWeight: '600',
+  },
+  savedPlaylistDuration: {
+    fontSize: 10,
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontWeight: '500',
+  },
+  musicLibraryStatus: {
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  musicLibraryStatusText: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.7)',
+    marginBottom: 4,
+    fontWeight: '500',
+  },
+  loadLibraryButton: {
+    backgroundColor: 'rgba(138, 43, 226, 0.15)',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginTop: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(138, 43, 226, 0.3)',
+  },
+  loadLibraryButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#8A2BE2',
+    letterSpacing: 0.3,
+  },
+  musicInfo: {
+    backgroundColor: 'rgba(147, 112, 219, 0.08)',
+    borderRadius: 10,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(147, 112, 219, 0.2)',
+  },
+  musicInfoText: {
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginBottom: 12,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  musicInfoBullet: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.7)',
+    marginBottom: 4,
+    paddingLeft: 12,
+    lineHeight: 16,
+  },
+  // Spotify Integration Styles
+  spotifySection: {
+    backgroundColor: 'rgba(30, 215, 96, 0.1)',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(30, 215, 96, 0.3)',
+  },
+  spotifySectionTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#1ED760',
+    marginBottom: 12,
+    textAlign: 'center',
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(30, 215, 96, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  spotifyConnected: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  spotifyUserInfo: {
+    flex: 1,
+  },
+  spotifyUserName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1ED760',
+    marginBottom: 4,
+    letterSpacing: 0.3,
+  },
+  spotifyUserDetails: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontWeight: '500',
+  },
+  spotifyLogoutButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  spotifyLogoutButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.8)',
+    letterSpacing: 0.3,
+  },
+  spotifyDisconnected: {
+    alignItems: 'center',
+  },
+  spotifyBenefits: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginBottom: 8,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  spotifyBenefit: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.7)',
+    marginBottom: 4,
+    fontWeight: '500',
+  },
+  spotifyConnectButton: {
+    backgroundColor: '#1ED760',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    marginTop: 12,
+    alignItems: 'center',
+    shadowColor: '#1ED760',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  spotifyConnectButtonText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#000000',
+    marginBottom: 2,
+    letterSpacing: 0.5,
+  },
+  spotifyConnectButtonDesc: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: 'rgba(0, 0, 0, 0.7)',
   },
 });
