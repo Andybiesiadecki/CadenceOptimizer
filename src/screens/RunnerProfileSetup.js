@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Platform } from 'react-native';
 import { saveRunnerProfile } from '../utils/storage';
+import { webAlert, showSuccess, showError } from '../utils/webAlert';
 
 export default function RunnerProfileSetup({ navigation, onComplete }) {
   const [currentStep, setCurrentStep] = useState(1);
@@ -117,7 +118,7 @@ export default function RunnerProfileSetup({ navigation, onComplete }) {
   const handleSave = async () => {
     // Validate required fields
     if (!profile.height || !profile.weight || !profile.age) {
-      Alert.alert('Missing Information', 'Please fill in height, weight, and age to continue.');
+      showError('Please fill in height, weight, and age to continue.');
       return;
     }
 
@@ -128,26 +129,26 @@ export default function RunnerProfileSetup({ navigation, onComplete }) {
     // Validate ranges
     if (units === 'metric') {
       if (height < 120 || height > 220) {
-        Alert.alert('Invalid Height', 'Please enter a height between 120-220 cm.');
+        showError('Please enter a height between 120-220 cm.');
         return;
       }
       if (weight < 30 || weight > 200) {
-        Alert.alert('Invalid Weight', 'Please enter a weight between 30-200 kg.');
+        showError('Please enter a weight between 30-200 kg.');
         return;
       }
     } else {
       if (height < 48 || height > 84) {
-        Alert.alert('Invalid Height', 'Please enter a height between 48-84 inches.');
+        showError('Please enter a height between 48-84 inches.');
         return;
       }
       if (weight < 66 || weight > 440) {
-        Alert.alert('Invalid Weight', 'Please enter a weight between 66-440 lbs.');
+        showError('Please enter a weight between 66-440 lbs.');
         return;
       }
     }
 
     if (age < 13 || age > 100) {
-      Alert.alert('Invalid Age', 'Please enter an age between 13-100 years.');
+      showError('Please enter an age between 13-100 years.');
       return;
     }
 
@@ -213,29 +214,24 @@ export default function RunnerProfileSetup({ navigation, onComplete }) {
       
       console.log('Profile saved successfully');
       
-      Alert.alert(
-        'Profile Created! 🎉',
+      // Use web-compatible success message
+      showSuccess(
         'Your comprehensive runner profile has been saved. All cadence recommendations will now be personalized based on your data.',
-        [
-          {
-            text: 'Start Running!',
-            onPress: () => {
-              try {
-                if (onComplete) {
-                  onComplete(profileData);
-                } else if (navigation && navigation.navigate) {
-                  navigation.navigate('Home');
-                }
-              } catch (navError) {
-                console.error('Navigation error:', navError);
-              }
-            },
-          },
-        ]
+        () => {
+          try {
+            if (onComplete) {
+              onComplete(profileData);
+            } else if (navigation && navigation.navigate) {
+              navigation.navigate('Home');
+            }
+          } catch (navError) {
+            console.error('Navigation error:', navError);
+          }
+        }
       );
     } catch (error) {
       console.error('Error saving profile:', error);
-      Alert.alert('Error', 'Failed to save profile. Please try again.');
+      showError('Failed to save profile. Please try again.');
     } finally {
       setLoading(false);
     }
