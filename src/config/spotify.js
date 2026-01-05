@@ -2,9 +2,15 @@
 // Replace these with your actual Spotify App credentials
 
 export const SPOTIFY_CONFIG = {
-  // Get these from: https://developer.spotify.com/dashboard
-  clientId: 'YOUR_SPOTIFY_CLIENT_ID', // Replace with your Client ID
-  clientSecret: 'YOUR_SPOTIFY_CLIENT_SECRET', // Replace with your Client Secret (keep secure!)
+  // Temporary: Disable Spotify for testing
+  enabled: false, // Set to true when you have real credentials
+  
+  // Replace these with your actual credentials from Spotify Developer Dashboard
+  clientId: 'PASTE_YOUR_CLIENT_ID_HERE', // Replace with your actual Client ID
+  clientSecret: 'PASTE_YOUR_CLIENT_SECRET_HERE', // Replace with your actual Client Secret
+  
+  // Web development redirect URI
+  redirectUri: 'http://localhost:8081/spotify-callback',
   
   // Scopes define what permissions your app requests
   scopes: [

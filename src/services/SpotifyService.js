@@ -4,30 +4,21 @@
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-// Spotify API Configuration
-const SPOTIFY_CONFIG = {
-  clientId: 'YOUR_SPOTIFY_CLIENT_ID', // Replace with your Spotify Client ID
-  scopes: [
-    'user-read-private',
-    'user-read-email',
-    'playlist-read-private',
-    'playlist-read-collaborative',
-    'playlist-modify-public',
-    'playlist-modify-private',
-    'user-library-read',
-    'user-top-read',
-    'streaming', // For playback (Premium required)
-  ],
-  redirectUri: AuthSession.makeRedirectUri({
-    scheme: 'cadenceoptimizer',
-    path: 'spotify-auth',
-  }),
-};
+import { SPOTIFY_CONFIG } from '../config/spotify';
 
 WebBrowser.maybeCompleteAuthSession();
 
 export class SpotifyService {
+  
+  // Check if Spotify is enabled
+  static isEnabled() {
+    return SPOTIFY_CONFIG.enabled === true;
+  }
+  
+  // Show disabled message
+  static getDisabledMessage() {
+    return 'Spotify integration is currently disabled. See SPOTIFY_SETUP.md for setup instructions.';
+  }
   constructor() {
     this.isAuthenticated = false;
     this.accessToken = null;

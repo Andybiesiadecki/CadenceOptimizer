@@ -10,6 +10,10 @@ import MusicLibraryService from '../services/MusicLibraryService';
 import SpotifyService from '../services/SpotifyService';
 
 export default function MetronomeScreen() {
+  // ... existing state ...
+  
+  // Check if Spotify is enabled
+  const [spotifyEnabled, setSpotifyEnabled] = useState(SpotifyService.isEnabled());
   const [isPlaying, setIsPlaying] = useState(false);
   const [cadence, setCadence] = useState(170);
   const [currentBeat, setCurrentBeat] = useState(0);
@@ -107,10 +111,15 @@ export default function MetronomeScreen() {
       const playlists = await MusicLibraryService.getSavedPlaylists();
       setSavedPlaylists(playlists);
       
-      // Check Spotify authentication status
-      const spotifyStatus = SpotifyService.getStatus();
-      setSpotifyAuthenticated(spotifyStatus.isAuthenticated);
-      setSpotifyUser(spotifyStatus.userProfile);
+      // Check Spotify authentication status only if enabled
+      if (SpotifyService.isEnabled()) {
+        const spotifyStatus = SpotifyService.getStatus();
+        setSpotifyAuthenticated(spotifyStatus.isAuthenticated);
+        setSpotifyUser(spotifyStatus.userProfile);
+      } else {
+        setSpotifyAuthenticated(false);
+        setSpotifyUser(null);
+      }
       
       console.log('Music service initialized successfully');
     } catch (error) {
