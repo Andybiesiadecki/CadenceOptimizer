@@ -3,27 +3,65 @@
     "name": "Cadence Optimizer",
     "slug": "cadence-optimizer",
     "version": "1.0.0",
-    "sdkVersion": "54.0.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A0A0A"
+    },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.cadenceoptimizer.app",
+      "buildNumber": "1",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "This app needs access to your location for terrain detection and GPS-based cadence adjustments.",
-        "NSMicrophoneUsageDescription": "This app needs access to audio for metronome functionality."
+        "NSLocationWhenInUseUsageDescription": "Cadence Optimizer uses your location for terrain detection and GPS-based cadence adjustments during runs.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Cadence Optimizer uses your location for terrain detection and GPS-based cadence adjustments during runs.",
+        "NSMicrophoneUsageDescription": "Cadence Optimizer needs audio access for metronome functionality and voice coaching.",
+        "NSMotionUsageDescription": "Cadence Optimizer uses motion sensors to detect running cadence and provide real-time feedback.",
+        "NSHealthShareUsageDescription": "Cadence Optimizer can integrate with HealthKit to provide comprehensive running analytics.",
+        "NSHealthUpdateUsageDescription": "Cadence Optimizer can save your running data to HealthKit for comprehensive health tracking.",
+        "UIBackgroundModes": ["audio", "location"]
+      },
+      "config": {
+        "usesNonExemptEncryption": false
       }
     },
     "android": {
+      "package": "com.cadenceoptimizer.app",
+      "versionCode": 1,
       "permissions": [
         "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
-      ]
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "RECORD_AUDIO",
+        "WAKE_LOCK",
+        "FOREGROUND_SERVICE"
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0A0A0A"
+      }
     },
     "web": {
-      "bundler": "metro"
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-location",
+      "expo-av",
+      "expo-document-picker",
+      "expo-file-system",
+      "@react-native-async-storage/async-storage"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "your-project-id-here"
+      }
     }
   }
 }
