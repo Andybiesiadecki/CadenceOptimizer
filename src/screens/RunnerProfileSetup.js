@@ -834,30 +834,27 @@ export default function RunnerProfileSetup({ navigation, onComplete }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0A0A0A',
+    backgroundColor: '#FFFFFF',
   },
   header: {
-    backgroundColor: 'rgba(0, 255, 157, 0.1)',
+    backgroundColor: '#F8F8F8',
     padding: 28,
     paddingTop: 50,
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 255, 157, 0.2)',
+    borderBottomColor: '#E5E5E5',
   },
   title: {
     fontSize: 28,
     fontWeight: '900',
-    color: '#FFFFFF',
+    color: '#000000',
     marginBottom: 12,
     letterSpacing: 1,
     textTransform: 'uppercase',
-    textShadowColor: 'rgba(0, 255, 157, 0.3)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 8,
   },
   subtitle: {
     fontSize: 18,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: '#666666',
     textAlign: 'center',
     marginBottom: 20,
     fontWeight: '600',
@@ -937,7 +934,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   unitButtonActive: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#000000',
   },
   unitButtonText: {
     fontSize: 14,
@@ -964,8 +961,8 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   optionButtonActive: {
-    borderColor: '#007AFF',
-    backgroundColor: '#E3F2FD',
+    borderColor: '#000000',
+    backgroundColor: '#F8F8F8',
   },
   optionButtonText: {
     fontSize: 14,
@@ -973,7 +970,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   optionButtonTextActive: {
-    color: '#007AFF',
+    color: '#000000',
   },
   experienceGrid: {
     gap: 12,
@@ -1005,7 +1002,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   experienceLabelActive: {
-    color: '#007AFF',
+    color: '#000000',
   },
   experienceDesc: {
     fontSize: 13,
@@ -1056,8 +1053,8 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   goalCardActive: {
-    borderColor: '#007AFF',
-    backgroundColor: '#E3F2FD',
+    borderColor: '#000000',
+    backgroundColor: '#F8F8F8',
   },
   goalIcon: {
     fontSize: 24,
@@ -1070,7 +1067,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   goalLabelActive: {
-    color: '#007AFF',
+    color: '#000000',
   },
   summaryCard: {
     backgroundColor: '#fff',
@@ -1125,7 +1122,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   navButtonPrimary: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#000000',
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 20,

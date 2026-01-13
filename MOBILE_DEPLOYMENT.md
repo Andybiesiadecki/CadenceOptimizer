@@ -1,8 +1,8 @@
-# 📱 Mobile Production Deployment Guide
+# 📱 STRDR Mobile Production Deployment Guide
 
 ## 🚀 Quick Start
 
-The Cadence Optimizer app is now configured for mobile production deployment using Expo Application Services (EAS).
+The STRDR app is now configured for mobile production deployment using Expo Application Services (EAS).
 
 ## 📋 Prerequisites
 

@@ -15,48 +15,56 @@ export default function App() {
   return (
     <NavigationContainer
       theme={{
-        dark: true,
+        dark: false,
         colors: {
-          primary: '#00FF9D',
-          background: '#0A0A0A',
-          card: 'rgba(255, 255, 255, 0.05)',
-          text: '#FFFFFF',
-          border: 'rgba(255, 255, 255, 0.1)',
-          notification: '#00FF9D',
+          primary: '#000000',
+          background: '#FFFFFF',
+          card: '#FFFFFF',
+          text: '#000000',
+          border: '#E5E5E5',
+          notification: '#000000',
         },
       }}
     >
-      <StatusBar style="light" backgroundColor="#0A0A0A" />
+      <StatusBar style="dark" backgroundColor="#FFFFFF" />
       <Tab.Navigator
         screenOptions={{
-          tabBarActiveTintColor: '#00FF9D',
-          tabBarInactiveTintColor: 'rgba(255, 255, 255, 0.5)',
+          tabBarActiveTintColor: '#000000',
+          tabBarInactiveTintColor: '#666666',
           tabBarStyle: {
-            backgroundColor: 'rgba(255, 255, 255, 0.05)',
-            borderTopColor: 'rgba(255, 255, 255, 0.1)',
+            backgroundColor: '#FFFFFF',
+            borderTopColor: '#E5E5E5',
             borderTopWidth: 1,
             paddingTop: 8,
             paddingBottom: 8,
             height: 70,
+            shadowColor: '#000000',
+            shadowOffset: { width: 0, height: -2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 8,
+            elevation: 10,
           },
           tabBarLabelStyle: {
-            fontSize: 12,
-            fontWeight: '600',
-            letterSpacing: 0.5,
+            fontSize: 11,
+            fontWeight: '700',
+            letterSpacing: 1,
             textTransform: 'uppercase',
           },
           headerStyle: {
-            backgroundColor: 'rgba(255, 255, 255, 0.05)',
-            borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+            backgroundColor: '#FFFFFF',
+            borderBottomColor: '#E5E5E5',
             borderBottomWidth: 1,
-            shadowColor: 'transparent',
-            elevation: 0,
+            shadowColor: '#000000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 8,
+            elevation: 10,
           },
-          headerTintColor: '#FFFFFF',
+          headerTintColor: '#000000',
           headerTitleStyle: {
-            fontWeight: '800',
-            fontSize: 20,
-            letterSpacing: 1,
+            fontWeight: '900',
+            fontSize: 22,
+            letterSpacing: 2,
             textTransform: 'uppercase',
           },
         }}
@@ -65,8 +73,8 @@ export default function App() {
           name="Home" 
           component={HomeScreen}
           options={{ 
-            title: 'CADENCE OPTIMIZER',
-            tabBarIcon: ({ color }) => '🏠',
+            title: 'STRDR',
+            tabBarIcon: ({ color }) => '⚡',
             tabBarLabel: 'HOME'
           }}
         />
@@ -74,7 +82,7 @@ export default function App() {
           name="Analysis" 
           component={AnalysisScreen}
           options={{ 
-            title: 'FIT ANALYSIS',
+            title: 'ANALYSIS',
             tabBarIcon: ({ color }) => '📊',
             tabBarLabel: 'ANALYSIS'
           }}
@@ -92,7 +100,7 @@ export default function App() {
           name="Targets" 
           component={TargetsScreen}
           options={{ 
-            title: 'RACE TARGETS',
+            title: 'TARGETS',
             tabBarIcon: ({ color }) => '🎯',
             tabBarLabel: 'TARGETS'
           }}
@@ -101,7 +109,7 @@ export default function App() {
           name="Profile" 
           component={RunnerProfileSetup}
           options={{ 
-            title: 'RUNNER PROFILE',
+            title: 'PROFILE',
             tabBarIcon: ({ color }) => '👤',
             tabBarLabel: 'PROFILE'
           }}

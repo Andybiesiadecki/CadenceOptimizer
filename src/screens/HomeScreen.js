@@ -53,9 +53,8 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.heroGlow} />
         </View>
         <View style={styles.heroContent}>
-          <Text style={styles.heroTitle}>CADENCE</Text>
-          <Text style={styles.heroTitleAccent}>OPTIMIZER</Text>
-          <Text style={styles.heroSubtitle}>Your intelligent running coach</Text>
+          <Text style={styles.heroTitle}>STRDR</Text>
+          <Text style={styles.heroSubtitle}>CADENCE AND SPEED OPTIMIZER</Text>
           <View style={styles.heroStats}>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>170</Text>
@@ -81,24 +80,24 @@ export default function HomeScreen({ navigation }) {
         
         <ActionCard
           icon="📊"
-          title="ANALYZE FIT FILE"
-          description="Upload your Garmin data for personalized cadence recommendations"
+          title="ANALYZE DATA"
+          description="Upload your running data for intelligent performance insights"
           onPress={() => navigation.navigate('Analysis')}
           style={styles.analysisCard}
         />
 
         <ActionCard
           icon="🎵"
-          title="START METRONOME"
-          description="Audio coaching with terrain-adaptive cadence"
+          title="SMART METRONOME"
+          description="Precision audio coaching with adaptive cadence technology"
           onPress={() => navigation.navigate('Metronome')}
           style={styles.metronomeCard}
         />
 
         <ActionCard
           icon="🎯"
-          title="CALCULATE RACE TARGET"
-          description="Optimize cadence for your next race"
+          title="RACE OPTIMIZER"
+          description="Calculate optimal cadence for peak race performance"
           onPress={() => navigation.navigate('Targets')}
           style={styles.targetsCard}
         />
@@ -107,8 +106,8 @@ export default function HomeScreen({ navigation }) {
         {!hasProfile ? (
           <ActionCard
             icon="👤"
-            title="CREATE RUNNER PROFILE"
-            description="Get personalized recommendations based on your metrics"
+            title="CREATE PROFILE"
+            description="Personalize STRDR with your running metrics and goals"
             onPress={() => navigation.navigate('Profile')}
             style={styles.profileCard}
           />
@@ -156,7 +155,7 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0A0A0A',
+    backgroundColor: '#FFFFFF',
   },
   
   // Hero Section Styles
@@ -171,7 +170,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 255, 157, 0.05)',
+    backgroundColor: '#F8F8F8',
   },
   heroGlow: {
     position: 'absolute',
@@ -179,7 +178,7 @@ const styles = StyleSheet.create({
     left: -50,
     right: -50,
     height: 200,
-    backgroundColor: 'rgba(0, 255, 157, 0.1)',
+    backgroundColor: 'rgba(0, 0, 0, 0.02)',
     borderRadius: 200,
     transform: [{ scaleX: 2 }],
   },
@@ -191,44 +190,44 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   heroTitle: {
-    fontSize: 42,
+    fontSize: 56,
     fontWeight: '900',
-    color: '#FFFFFF',
-    letterSpacing: 3,
+    color: '#000000',
+    letterSpacing: 8,
     textAlign: 'center',
-    textShadowColor: 'rgba(0, 255, 157, 0.5)',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 20,
   },
   heroTitleAccent: {
     fontSize: 42,
     fontWeight: '900',
-    color: '#00FF9D',
+    color: '#000000',
     letterSpacing: 3,
     textAlign: 'center',
     marginTop: -8,
-    textShadowColor: 'rgba(0, 255, 157, 0.8)',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 30,
   },
   heroSubtitle: {
-    fontSize: 18,
-    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 16,
+    color: '#666666',
     fontWeight: '600',
-    letterSpacing: 1,
+    letterSpacing: 2,
     textAlign: 'center',
     marginTop: 12,
     marginBottom: 32,
+    textTransform: 'uppercase',
   },
   heroStats: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: '#FFFFFF',
     borderRadius: 20,
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: '#E5E5E5',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
   },
   statItem: {
     alignItems: 'center',
@@ -237,15 +236,12 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 24,
     fontWeight: '900',
-    color: '#00FF9D',
+    color: '#000000',
     letterSpacing: 1,
-    textShadowColor: 'rgba(0, 255, 157, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
   },
   statLabel: {
     fontSize: 11,
-    color: 'rgba(255, 255, 255, 0.6)',
+    color: '#666666',
     fontWeight: '700',
     letterSpacing: 0.5,
     marginTop: 4,
@@ -253,7 +249,7 @@ const styles = StyleSheet.create({
   statDivider: {
     width: 1,
     height: 30,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: '#E5E5E5',
   },
 
   // Actions Section Styles
@@ -265,24 +261,24 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '900',
     marginBottom: 24,
-    color: '#FFFFFF',
+    color: '#000000',
     letterSpacing: 1.5,
     textAlign: 'center',
   },
 
   // Action Card Styles
   actionCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 24,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 12,
+    borderColor: '#E5E5E5',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -293,12 +289,12 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: '#F8F8F8',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
+    borderColor: '#E5E5E5',
   },
   cardIcon: {
     fontSize: 24,
@@ -309,13 +305,13 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: '#000000',
     letterSpacing: 0.5,
     marginBottom: 8,
   },
   cardDescription: {
     fontSize: 15,
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: '#666666',
     lineHeight: 22,
     fontWeight: '500',
   },
@@ -326,53 +322,51 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(0, 255, 157, 0.1)',
+    backgroundColor: '#000000',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 255, 157, 0.2)',
   },
   arrowText: {
     fontSize: 18,
-    color: '#00FF9D',
+    color: '#FFFFFF',
     fontWeight: '800',
   },
 
   // Specialized Card Styles
   analysisCard: {
     borderLeftWidth: 4,
-    borderLeftColor: '#2196F3',
-    backgroundColor: 'rgba(33, 150, 243, 0.05)',
+    borderLeftColor: '#000000',
+    backgroundColor: '#FAFAFA',
   },
   metronomeCard: {
     borderLeftWidth: 4,
-    borderLeftColor: '#00FF9D',
-    backgroundColor: 'rgba(0, 255, 157, 0.05)',
+    borderLeftColor: '#000000',
+    backgroundColor: '#FAFAFA',
   },
   targetsCard: {
     borderLeftWidth: 4,
-    borderLeftColor: '#FF9800',
-    backgroundColor: 'rgba(255, 152, 0, 0.05)',
+    borderLeftColor: '#000000',
+    backgroundColor: '#FAFAFA',
   },
   profileCard: {
     borderLeftWidth: 4,
-    borderLeftColor: '#9C27B0',
-    backgroundColor: 'rgba(156, 39, 176, 0.05)',
+    borderLeftColor: '#000000',
+    backgroundColor: '#FAFAFA',
   },
 
   // Profile Complete Card Styles
   profileCompleteCard: {
-    backgroundColor: 'rgba(0, 255, 157, 0.08)',
+    backgroundColor: '#F8F8F8',
     borderRadius: 20,
     padding: 24,
     marginBottom: 16,
     borderWidth: 2,
-    borderColor: 'rgba(0, 255, 157, 0.2)',
-    shadowColor: '#00FF9D',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 12,
+    borderColor: '#000000',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
   },
   profileHeader: {
     flexDirection: 'row',
@@ -383,12 +377,10 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 16,
-    backgroundColor: 'rgba(0, 255, 157, 0.15)',
+    backgroundColor: '#000000',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 255, 157, 0.3)',
   },
   profileIcon: {
     fontSize: 24,
@@ -399,27 +391,24 @@ const styles = StyleSheet.create({
   profileTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#00FF9D',
+    color: '#000000',
     letterSpacing: 0.5,
     marginBottom: 4,
-    textShadowColor: 'rgba(0, 255, 157, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
   },
   profileDetails: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: '#666666',
     fontWeight: '600',
     letterSpacing: 0.3,
   },
   profileStats: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     paddingVertical: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: '#E5E5E5',
   },
   profileStat: {
     alignItems: 'center',
@@ -427,12 +416,12 @@ const styles = StyleSheet.create({
   profileStatValue: {
     fontSize: 20,
     fontWeight: '900',
-    color: '#FFFFFF',
+    color: '#000000',
     letterSpacing: 0.5,
   },
   profileStatLabel: {
     fontSize: 11,
-    color: 'rgba(255, 255, 255, 0.6)',
+    color: '#666666',
     fontWeight: '700',
     letterSpacing: 0.5,
     marginTop: 4,

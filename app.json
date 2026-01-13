@@ -1,38 +1,41 @@
 {
   "expo": {
-    "name": "Cadence Optimizer",
-    "slug": "cadence-optimizer",
+    "name": "STRDR",
+    "slug": "strdr",
     "version": "1.0.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "light",
     "icon": "./assets/icon.png",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0A0A0A"
+      "backgroundColor": "#FFFFFF"
     },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.cadenceoptimizer.app",
+      "bundleIdentifier": "com.strdr.app",
       "buildNumber": "1",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Cadence Optimizer uses your location for terrain detection and GPS-based cadence adjustments during runs.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "Cadence Optimizer uses your location for terrain detection and GPS-based cadence adjustments during runs.",
-        "NSMicrophoneUsageDescription": "Cadence Optimizer needs audio access for metronome functionality and voice coaching.",
-        "NSMotionUsageDescription": "Cadence Optimizer uses motion sensors to detect running cadence and provide real-time feedback.",
-        "NSHealthShareUsageDescription": "Cadence Optimizer can integrate with HealthKit to provide comprehensive running analytics.",
-        "NSHealthUpdateUsageDescription": "Cadence Optimizer can save your running data to HealthKit for comprehensive health tracking.",
-        "UIBackgroundModes": ["audio", "location"]
+        "NSLocationWhenInUseUsageDescription": "STRDR uses your location for terrain detection and GPS-based cadence adjustments during runs.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "STRDR uses your location for terrain detection and GPS-based cadence adjustments during runs.",
+        "NSMicrophoneUsageDescription": "STRDR needs audio access for metronome functionality and voice coaching.",
+        "NSMotionUsageDescription": "STRDR uses motion sensors to detect running cadence and provide real-time feedback.",
+        "NSHealthShareUsageDescription": "STRDR can integrate with HealthKit to provide comprehensive running analytics.",
+        "NSHealthUpdateUsageDescription": "STRDR can save your running data to HealthKit for comprehensive health tracking.",
+        "UIBackgroundModes": [
+          "audio",
+          "location"
+        ]
       },
       "config": {
         "usesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "com.cadenceoptimizer.app",
+      "package": "com.strdr.app",
       "versionCode": 1,
       "permissions": [
         "ACCESS_FINE_LOCATION",
@@ -40,11 +43,18 @@
         "ACCESS_BACKGROUND_LOCATION",
         "RECORD_AUDIO",
         "WAKE_LOCK",
-        "FOREGROUND_SERVICE"
+        "FOREGROUND_SERVICE",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.INTERNET"
       ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0A0A0A"
+        "backgroundColor": "#FFFFFF"
       }
     },
     "web": {
@@ -55,13 +65,13 @@
       "expo-location",
       "expo-av",
       "expo-document-picker",
-      "expo-file-system",
-      "@react-native-async-storage/async-storage"
+      "expo-file-system"
     ],
     "extra": {
       "eas": {
-        "projectId": "your-project-id-here"
+        "projectId": "b52b7ce0-1b0e-4e33-9011-0514cd483ec6"
       }
-    }
+    },
+    "owner": "andybies"
   }
 }

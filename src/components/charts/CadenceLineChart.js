@@ -12,7 +12,7 @@ export default function CadenceLineChart({ data, title = "Cadence Over Time" }) 
         labels: ['0', '5', '10', '15', '20'],
         datasets: [{
           data: [170, 172, 175, 173, 171],
-          color: (opacity = 1) => `rgba(0, 122, 255, ${opacity})`,
+          color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`, // Black line
           strokeWidth: 2,
         }]
       };
@@ -33,7 +33,7 @@ export default function CadenceLineChart({ data, title = "Cadence Over Time" }) 
       labels: labels.slice(0, 10), // Limit to 10 labels for readability
       datasets: [{
         data: cadenceValues.slice(0, 10),
-        color: (opacity = 1) => `rgba(0, 122, 255, ${opacity})`,
+        color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`, // Black line
         strokeWidth: 2,
       }]
     };
@@ -46,8 +46,8 @@ export default function CadenceLineChart({ data, title = "Cadence Over Time" }) 
     backgroundGradientFrom: '#ffffff',
     backgroundGradientTo: '#ffffff',
     decimalPlaces: 0,
-    color: (opacity = 1) => `rgba(0, 122, 255, ${opacity})`,
-    labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+    color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`, // Black lines
+    labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`, // Black labels
     style: {
       borderRadius: 16,
     },
