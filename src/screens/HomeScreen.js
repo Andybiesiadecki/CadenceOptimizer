@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { getRunnerProfile } from '../utils/storage';
+import analytics from '../services/AnalyticsService';
+import AnalyticsDashboard from '../components/AnalyticsDashboard';
 
 const { width } = Dimensions.get('window');
 
 export default function HomeScreen({ navigation }) {
   const [hasProfile, setHasProfile] = useState(false);
   const [profile, setProfile] = useState(null);
+  const [showAnalytics, setShowAnalytics] = useState(false);
 
   useEffect(() => {
     checkProfile();
@@ -82,7 +85,10 @@ export default function HomeScreen({ navigation }) {
           icon="📊"
           title="ANALYZE DATA"
           description="Upload your running data for intelligent performance insights"
-          onPress={() => navigation.navigate('Analysis')}
+          onPress={() => {
+            analytics.trackUserAction('navigation', { destination: 'Analysis', source: 'home_quick_action' });
+            navigation.navigate('Analysis');
+          }}
           style={styles.analysisCard}
         />
 
@@ -90,7 +96,10 @@ export default function HomeScreen({ navigation }) {
           icon="🎵"
           title="SMART METRONOME"
           description="Precision audio coaching with adaptive cadence technology"
-          onPress={() => navigation.navigate('Metronome')}
+          onPress={() => {
+            analytics.trackUserAction('navigation', { destination: 'Metronome', source: 'home_quick_action' });
+            navigation.navigate('Metronome');
+          }}
           style={styles.metronomeCard}
         />
 
@@ -98,7 +107,10 @@ export default function HomeScreen({ navigation }) {
           icon="🎯"
           title="RACE OPTIMIZER"
           description="Calculate optimal cadence for peak race performance"
-          onPress={() => navigation.navigate('Targets')}
+          onPress={() => {
+            analytics.trackUserAction('navigation', { destination: 'Targets', source: 'home_quick_action' });
+            navigation.navigate('Targets');
+          }}
           style={styles.targetsCard}
         />
 
@@ -108,13 +120,19 @@ export default function HomeScreen({ navigation }) {
             icon="👤"
             title="CREATE PROFILE"
             description="Personalize STRDR with your running metrics and goals"
-            onPress={() => navigation.navigate('Profile')}
+            onPress={() => {
+              analytics.trackUserAction('navigation', { destination: 'Profile', source: 'home_profile_setup' });
+              navigation.navigate('Profile');
+            }}
             style={styles.profileCard}
           />
         ) : (
           <TouchableOpacity 
             style={styles.profileCompleteCard}
-            onPress={() => navigation.navigate('Profile')}
+            onPress={() => {
+              analytics.trackUserAction('navigation', { destination: 'Profile', source: 'home_profile_complete' });
+              navigation.navigate('Profile');
+            }}
             activeOpacity={0.8}
           >
             <View style={styles.profileHeader}>
@@ -148,7 +166,22 @@ export default function HomeScreen({ navigation }) {
 
       {/* Bottom Spacer */}
       <View style={styles.bottomSpacer} />
+      
+      {/* Analytics Dashboard (Development) */}
+      <TouchableOpacity 
+        style={styles.analyticsButton}
+        onPress={() => setShowAnalytics(true)}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.analyticsButtonText}>📊</Text>
+      </TouchableOpacity>
     </ScrollView>
+    
+    {/* Analytics Dashboard Modal */}
+    <AnalyticsDashboard 
+      visible={showAnalytics}
+      onClose={() => setShowAnalytics(false)}
+    />
   );
 }
 
@@ -430,5 +463,26 @@ const styles = StyleSheet.create({
   // Bottom Spacer
   bottomSpacer: {
     height: 32,
+  },
+  
+  // Analytics Button (Development)
+  analyticsButton: {
+    position: 'absolute',
+    bottom: 100,
+    right: 20,
+    width: 50,
+    height: 50,
+    backgroundColor: '#000000',
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  analyticsButtonText: {
+    fontSize: 20,
   },
 });

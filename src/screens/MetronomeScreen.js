@@ -6,6 +6,7 @@ import LocationService from '../services/LocationService';
 import TerrainDetector from '../services/TerrainDetector';
 import WorkoutEngine from '../services/WorkoutEngine';
 import CoachingVoiceService from '../services/CoachingVoiceService';
+import analytics from '../services/AnalyticsService';
 
 export default function MetronomeScreenSimple() {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -13,6 +14,7 @@ export default function MetronomeScreenSimple() {
   const [currentBeat, setCurrentBeat] = useState(0);
   const [volume, setVolume] = useState(0.8);
   const [audioEnabled, setAudioEnabled] = useState(true);
+  const [workoutStartTime, setWorkoutStartTime] = useState(null);
   const [mode, setMode] = useState('basic'); // basic, terrain, fartlek, interval, progressive
   
   // Terrain mode states
@@ -222,6 +224,13 @@ export default function MetronomeScreenSimple() {
   const toggleMetronome = async () => {
     try {
       if (isPlaying) {
+        // Track workout stop
+        analytics.trackFeatureUsage('metronome', 'workout_stopped', {
+          mode: mode,
+          duration: Date.now() - workoutStartTime,
+          cadence: cadence
+        });
+        
         await MetronomeService.stop();
         WorkoutEngine.stopWorkout();
         setIsPlaying(false);
@@ -233,6 +242,16 @@ export default function MetronomeScreenSimple() {
           stopLocationTracking();
         }
       } else {
+        // Track workout start
+        analytics.trackFeatureUsage('metronome', 'workout_started', {
+          mode: mode,
+          cadence: cadence,
+          audioEnabled: audioEnabled,
+          coachingEnabled: coachingEnabled
+        });
+        
+        setWorkoutStartTime(Date.now());
+        
         // Start location tracking if in terrain mode
         if (mode === 'terrain') {
           setBaseCadence(cadence); // Store original cadence

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
@@ -8,10 +8,26 @@ import AnalysisScreen from './src/screens/AnalysisScreen';
 import MetronomeScreen from './src/screens/MetronomeScreen';
 import TargetsScreen from './src/screens/TargetsScreen';
 import RunnerProfileSetup from './src/screens/RunnerProfileSetup';
+import analytics from './src/services/AnalyticsService';
 
 const Tab = createBottomTabNavigator();
 
 export default function App() {
+  useEffect(() => {
+    // Track app launch
+    analytics.track('app_launch', {
+      platform: 'mobile',
+      version: '1.0.0'
+    });
+  }, []);
+
+  const handleScreenChange = (state) => {
+    if (state) {
+      const routeName = state.routes[state.index].name;
+      analytics.trackScreen(routeName);
+    }
+  };
+
   return (
     <NavigationContainer
       theme={{
@@ -25,6 +41,7 @@ export default function App() {
           notification: '#000000',
         },
       }}
+      onStateChange={handleScreenChange}
     >
       <StatusBar style="dark" backgroundColor="#FFFFFF" />
       <Tab.Navigator

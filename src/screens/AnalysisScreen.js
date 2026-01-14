@@ -5,6 +5,7 @@ import JSZip from 'jszip';
 import { FitFileParser } from '../services/FitFileParser';
 import { CadenceAnalyzer } from '../services/CadenceAnalyzer';
 import { saveAnalysis, getRunnerProfile } from '../utils/storage';
+import analytics from '../services/AnalyticsService';
 
 // Import chart components
 import CadenceLineChart from '../components/charts/CadenceLineChart';
@@ -98,6 +99,9 @@ export default function AnalysisScreen() {
       setError(null);
       console.log('Starting file selection...');
 
+      // Track file upload attempt
+      analytics.trackFeatureUsage('analysis', 'file_upload_started');
+
       // Open document picker for FIT files
       const result = await DocumentPicker.getDocumentAsync({
         type: ['*/*'], // Accept all files, we'll validate FIT files
@@ -108,12 +112,20 @@ export default function AnalysisScreen() {
 
       if (result.canceled) {
         console.log('File selection canceled');
+        analytics.trackUserAction('file_upload_canceled');
         setLoading(false);
         return;
       }
 
       const file = result.assets[0];
       console.log('Selected file:', file.name, 'Size:', file.size);
+      
+      // Track file selection
+      analytics.trackFeatureUsage('analysis', 'file_selected', {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.name.split('.').pop()
+      });
       
       // Accept both .fit files and .zip files (Garmin exports are often zipped)
       const fileName = file.name.toLowerCase();
