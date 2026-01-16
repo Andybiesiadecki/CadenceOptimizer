@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1242" height="2436" viewBox="0 0 1242 2436" xmlns="http://www.w3.org/2000/svg">
+  <!-- Black Background -->
+  <rect width="1242" height="2436" fill="#000000"/>
+  
+  <!-- Centered STRDR Text -->
+  <text x="621" y="1280" 
+        font-family="Arial, sans-serif" 
+        font-size="120" 
+        font-weight="900" 
+        text-anchor="middle" 
+        fill="#FFFFFF" 
+        letter-spacing="15px">STRDR</text>
+  
+  <!-- Tagline -->
+  <text x="621" y="1350" 
+        font-family="Arial, sans-serif" 
+        font-size="24" 
+        font-weight="700" 
+        text-anchor="middle" 
+        fill="#CCCCCC" 
+        letter-spacing="6px">CADENCE AND SPEED OPTIMIZER</text>
+</svg>
