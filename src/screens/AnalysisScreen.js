@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Platform } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
-import JSZip from 'jszip';
+import * as FileSystem from 'expo-file-system';
+import { unzip } from 'react-native-zip-archive';
 import { FitFileParser } from '../services/FitFileParser';
 import { CadenceAnalyzer } from '../services/CadenceAnalyzer';
 import { saveAnalysis, getRunnerProfile } from '../utils/storage';
@@ -48,43 +49,45 @@ export default function AnalysisScreen() {
     }
   };
 
-  // Helper function to extract FIT files from ZIP archives
-  const extractFitFromZip = async (base64ZipData) => {
+  // Helper function to extract FIT files from ZIP archives using React Native compatible library
+  const extractFitFromZip = async (fileUri) => {
     try {
       console.log('Extracting FIT files from ZIP archive...');
       
-      // Load ZIP file - JSZip works with base64 data
-      const zip = new JSZip();
-      const zipContent = await zip.loadAsync(base64ZipData, { base64: true });
+      // Create a temporary directory for extraction
+      const tempDir = `${FileSystem.cacheDirectory}temp_zip_${Date.now()}/`;
+      await FileSystem.makeDirectoryAsync(tempDir, { intermediates: true });
       
-      // Find FIT files in the archive
-      const fitFiles = [];
-      zipContent.forEach((relativePath, file) => {
-        if (relativePath.toLowerCase().endsWith('.fit') && !file.dir) {
-          fitFiles.push({ path: relativePath, file });
-        }
-      });
+      // Extract ZIP file
+      await unzip(fileUri, tempDir);
+      console.log('ZIP extracted to:', tempDir);
+      
+      // Find FIT files in the extracted directory
+      const files = await FileSystem.readDirectoryAsync(tempDir);
+      const fitFiles = files.filter(name => name.toLowerCase().endsWith('.fit'));
       
       if (fitFiles.length === 0) {
         throw new Error('No .FIT files found in the ZIP archive. Please ensure your ZIP contains FIT files from your fitness device.');
       }
       
-      console.log(`Found ${fitFiles.length} FIT file(s) in ZIP:`, fitFiles.map(f => f.path));
+      console.log(`Found ${fitFiles.length} FIT file(s):`, fitFiles);
       
-      // For now, use the first FIT file found
-      // TODO: In the future, we could let users choose which file to analyze
-      const selectedFit = fitFiles[0];
-      console.log(`Extracting: ${selectedFit.path}`);
+      // Read the first FIT file as base64
+      const fitFilePath = `${tempDir}${fitFiles[0]}`;
+      const fitBase64 = await FileSystem.readAsStringAsync(fitFilePath, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
       
-      // Extract the FIT file as base64
-      const fitBase64 = await selectedFit.file.async('base64');
       console.log(`Extracted FIT file, size: ${fitBase64.length} characters`);
+      
+      // Clean up temp directory
+      await FileSystem.deleteAsync(tempDir, { idempotent: true });
       
       return {
         fitData: fitBase64,
-        fileName: selectedFit.path,
+        fileName: fitFiles[0],
         totalFitFiles: fitFiles.length,
-        allFitFiles: fitFiles.map(f => f.path)
+        allFitFiles: fitFiles
       };
       
     } catch (error) {
@@ -145,11 +148,8 @@ export default function AnalysisScreen() {
       if (fileName.endsWith('.zip')) {
         console.log('ZIP file detected, extracting FIT files...');
         
-        // Read ZIP file as base64 (web-compatible)
-        const zipBase64 = await readFileAsBase64(file.uri);
-        
-        // Extract FIT file from ZIP
-        const extractedData = await extractFitFromZip(zipBase64);
+        // Extract FIT file from ZIP using file URI (React Native compatible)
+        const extractedData = await extractFitFromZip(file.uri);
         base64Data = extractedData.fitData;
         actualFileName = extractedData.fileName;
         
