@@ -1,0 +1,10 @@
+node_modules/
+.git/
+.expo/
+dist/
+scripts/
+*.md
+!README.md
+!PRIVACY_POLICY.md
+.DS_Store
+*.log
