@@ -49,6 +49,7 @@ export default function HomeScreen({ navigation }) {
   );
 
   return (
+    <>
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Hero Section */}
       <View style={styles.heroSection}>
@@ -182,6 +183,7 @@ export default function HomeScreen({ navigation }) {
       visible={showAnalytics}
       onClose={() => setShowAnalytics(false)}
     />
+    </>
   );
 }
 
