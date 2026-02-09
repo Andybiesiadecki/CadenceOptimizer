@@ -981,13 +981,13 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: '#CCCCCC',
   },
   stepDotActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    backgroundColor: '#666666',
   },
   stepDotCurrent: {
-    backgroundColor: '#fff',
+    backgroundColor: '#000000',
     width: 16,
     height: 16,
     borderRadius: 8,
