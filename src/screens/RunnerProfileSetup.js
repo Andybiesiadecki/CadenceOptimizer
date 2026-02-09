@@ -310,9 +310,14 @@ export default function RunnerProfileSetup({ navigation, onComplete }) {
   };
 
   const handlePaceInput = (value) => {
-    // Only format when user stops typing (on blur) or when they type a space
-    // For now, just store the raw value and format on blur
-    updateProfile('comfortablePace', value);
+    // Remove unit suffixes first to get just the time part
+    let cleanValue = value.replace(/\s*\/\s*(mile|km|mi)$/i, '').trim();
+    
+    // Apply time formatting (colons)
+    const formatted = formatTimeInput(cleanValue);
+    
+    // Store the formatted time (units will be added on blur)
+    updateProfile('comfortablePace', formatted);
   };
 
   const handlePaceBlur = () => {
@@ -635,13 +640,14 @@ export default function RunnerProfileSetup({ navigation, onComplete }) {
         <Text style={styles.inputLabel}>Comfortable Easy Pace</Text>
         <TextInput
           style={styles.input}
-          placeholder={units === 'metric' ? 'e.g., 6:00' : 'e.g., 9:30'}
+          placeholder={units === 'metric' ? '600 → 6:00 /km' : '930 → 9:30 /mile'}
           value={profile.comfortablePace}
           onChangeText={handlePaceInput}
           onBlur={handlePaceBlur}
+          keyboardType="numeric"
         />
         <Text style={styles.inputHint}>
-          Just type the time (e.g., "6:00") - we'll add {units === 'metric' ? '/km' : '/mile'} automatically
+          Just type numbers - we'll add colons and {units === 'metric' ? '/km' : '/mile'} automatically
         </Text>
       </View>
 

@@ -8,6 +8,12 @@ export default function TargetsScreen() {
 
   const distances = ['5K', '10K', 'Half Marathon', 'Marathon'];
 
+  // Clear results when distance changes
+  const handleDistanceChange = (distance) => {
+    setSelectedDistance(distance);
+    setResult(null);
+  };
+
   // Format time input to auto-add colons (MM:SS or H:MM:SS)
   const formatTimeInput = (value) => {
     // Remove all non-numeric characters
@@ -32,11 +38,26 @@ export default function TargetsScreen() {
   };
 
   const calculateTarget = () => {
+    if (!targetTime) {
+      return; // Don't calculate if no time entered
+    }
+
     // TODO: Implement actual calculation algorithm
+    // For now, return different values based on distance to show it's working
+    const distanceMultipliers = {
+      '5K': { cadence: 180, paceKm: '4:30', paceMi: '7:15', stride: 1.50 },
+      '10K': { cadence: 175, paceKm: '5:00', paceMi: '8:03', stride: 1.42 },
+      'Half Marathon': { cadence: 170, paceKm: '5:30', paceMi: '8:51', stride: 1.38 },
+      'Marathon': { cadence: 168, paceKm: '6:00', paceMi: '9:39', stride: 1.35 }
+    };
+
+    const values = distanceMultipliers[selectedDistance] || distanceMultipliers['10K'];
+    
     setResult({
-      optimalCadence: 175,
-      targetPace: '5:00',
-      strideLength: 1.42,
+      optimalCadence: values.cadence,
+      targetPaceKm: values.paceKm,
+      targetPaceMi: values.paceMi,
+      strideLength: values.stride,
     });
   };
 
@@ -57,7 +78,7 @@ export default function TargetsScreen() {
                 styles.distanceButton,
                 selectedDistance === distance && styles.distanceButtonActive
               ]}
-              onPress={() => setSelectedDistance(distance)}
+              onPress={() => handleDistanceChange(distance)}
             >
               <Text style={[
                 styles.distanceButtonText,
@@ -97,7 +118,10 @@ export default function TargetsScreen() {
 
           <View style={styles.resultCard}>
             <Text style={styles.resultLabel}>Target Pace</Text>
-            <Text style={styles.resultValue}>{result.targetPace} /km</Text>
+            <View>
+              <Text style={styles.resultValue}>{result.targetPaceKm} /km</Text>
+              <Text style={styles.resultValueSecondary}>{result.targetPaceMi} /mi</Text>
+            </View>
           </View>
 
           <View style={styles.resultCard}>
@@ -226,28 +250,31 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   resultCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: '#F8F8F8',
     padding: 20,
     borderRadius: 12,
     marginBottom: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: '#E5E5E5',
     alignItems: 'center',
   },
   resultLabel: {
     fontSize: 18,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: '#000000',
     fontWeight: '600',
     letterSpacing: 0.3,
   },
   resultValue: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#00FF9D',
-    textShadowColor: 'rgba(0, 255, 157, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    color: '#000000',
+  },
+  resultValueSecondary: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#000000',
+    marginTop: 4,
   },
 });
