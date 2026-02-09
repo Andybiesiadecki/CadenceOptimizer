@@ -83,7 +83,7 @@ export default function MetronomeScreenSimple() {
     console.log(`Coaching cue (${type}):`, message);
     // Always show coaching cues when workout is active
     // Mobile - use actual voice service
-    CoachingVoiceService.speak(message, type);
+    CoachingVoiceService.speak(message, { type });
     
     // Also show visual notification for better UX
     Alert.alert('🎙️ Coach', message, [{ text: 'OK' }]);
