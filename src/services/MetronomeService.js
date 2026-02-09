@@ -163,21 +163,41 @@ export class MetronomeService {
     this.bpm = bpm;
     this.isPlaying = true;
     this.currentBeat = 0;
+    this.onBeat = onBeat;
 
     const interval = (60 / bpm) * 1000; // Convert BPM to milliseconds
+    this.startTime = Date.now();
+    this.nextBeatTime = this.startTime;
 
-    this.intervalId = setInterval(async () => {
+    // Use precise timing with drift correction
+    const scheduleBeat = () => {
+      if (!this.isPlaying) return;
+
+      const now = Date.now();
+      const drift = now - this.nextBeatTime;
+
+      // Schedule next beat
       this.currentBeat++;
       const isAccent = this.currentBeat % 4 === 0;
       
-      if (onBeat) {
-        onBeat(this.currentBeat, isAccent);
+      if (this.onBeat) {
+        this.onBeat(this.currentBeat, isAccent);
       }
       
       if (this.audioEnabled) {
-        await this.playSound(isAccent);
+        this.playSound(isAccent);
       }
-    }, interval);
+
+      // Calculate next beat time with drift correction
+      this.nextBeatTime += interval;
+      const delay = Math.max(0, this.nextBeatTime - Date.now());
+
+      // Schedule next beat
+      this.intervalId = setTimeout(scheduleBeat, delay);
+    };
+
+    // Start first beat immediately
+    scheduleBeat();
   }
 
   /**
@@ -185,11 +205,13 @@ export class MetronomeService {
    */
   stop() {
     if (this.intervalId) {
-      clearInterval(this.intervalId);
+      clearTimeout(this.intervalId);
       this.intervalId = null;
     }
     this.isPlaying = false;
     this.currentBeat = 0;
+    this.startTime = null;
+    this.nextBeatTime = null;
   }
 
   /**
