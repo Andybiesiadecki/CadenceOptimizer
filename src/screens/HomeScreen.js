@@ -54,6 +54,7 @@ export default function HomeScreen({ navigation }) {
       {/* Logo Section */}
       <View style={styles.logoSection}>
         <Text style={styles.logoText}>STRDR</Text>
+        <Text style={styles.subheaderText}>Running and Cadence Optimizer</Text>
       </View>
 
       {/* Quick Actions Section */}
@@ -184,6 +185,14 @@ const styles = StyleSheet.create({
     color: '#000000',
     letterSpacing: 8,
     textAlign: 'center',
+  },
+  subheaderText: {
+    fontSize: 12,
+    fontWeight: '400',
+    color: '#999999',
+    letterSpacing: 0.5,
+    textAlign: 'center',
+    marginTop: 4,
   },
   
   // Actions Section Styles
