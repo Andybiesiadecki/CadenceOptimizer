@@ -178,7 +178,7 @@ export class MetronomeService {
 
       // Schedule next beat
       this.currentBeat++;
-      const isAccent = this.currentBeat % 4 === 0;
+      const isAccent = false; // No accent - all beats are the same
       
       if (this.onBeat) {
         this.onBeat(this.currentBeat, isAccent);
