@@ -8,6 +8,29 @@ export default function TargetsScreen() {
 
   const distances = ['5K', '10K', 'Half Marathon', 'Marathon'];
 
+  // Format time input to auto-add colons (MM:SS or H:MM:SS)
+  const formatTimeInput = (value) => {
+    // Remove all non-numeric characters
+    const numbers = value.replace(/[^\d]/g, '');
+    
+    if (numbers.length === 0) return '';
+    if (numbers.length <= 2) return numbers;
+    if (numbers.length <= 4) {
+      // MM:SS format
+      return `${numbers.slice(0, 2)}:${numbers.slice(2)}`;
+    }
+    // H:MM:SS format for longer times
+    const hours = numbers.slice(0, numbers.length - 4);
+    const minutes = numbers.slice(numbers.length - 4, numbers.length - 2);
+    const seconds = numbers.slice(numbers.length - 2);
+    return `${hours}:${minutes}:${seconds}`;
+  };
+
+  const handleTimeInput = (value) => {
+    const formatted = formatTimeInput(value);
+    setTargetTime(formatted);
+  };
+
   const calculateTarget = () => {
     // TODO: Implement actual calculation algorithm
     setResult({
@@ -46,13 +69,13 @@ export default function TargetsScreen() {
           ))}
         </View>
 
-        <Text style={styles.label}>Target Time (HH:MM:SS)</Text>
+        <Text style={styles.label}>Target Time (just type numbers)</Text>
         <TextInput
           style={styles.input}
-          placeholder="00:45:00"
+          placeholder="4500 → 45:00"
           value={targetTime}
-          onChangeText={setTargetTime}
-          keyboardType="numbers-and-punctuation"
+          onChangeText={handleTimeInput}
+          keyboardType="numeric"
         />
 
         <TouchableOpacity 
