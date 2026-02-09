@@ -705,12 +705,22 @@ export class WorkoutEngine {
    * @param {Object} phase - Phase definition
    */
   scheduleCoachingCues(phase) {
-    if (!phase.coachingCues || !this.callbacks.onCoachingCue) return;
+    if (!phase.coachingCues || !this.callbacks.onCoachingCue) {
+      console.log('No coaching cues to schedule:', { 
+        hasCues: !!phase.coachingCues, 
+        hasCallback: !!this.callbacks.onCoachingCue,
+        cuesLength: phase.coachingCues?.length 
+      });
+      return;
+    }
 
+    console.log(`Scheduling ${phase.coachingCues.length} coaching cues for phase`);
     phase.coachingCues.forEach(cue => {
       const delay = cue.timing * phase.duration * 1000;
+      console.log(`Scheduling cue "${cue.message}" in ${delay}ms`);
       setTimeout(() => {
         if (this.isActive && this.callbacks.onCoachingCue) {
+          console.log(`Firing coaching cue: "${cue.message}" (${cue.type})`);
           this.callbacks.onCoachingCue(cue.message, cue.type);
         }
       }, delay);

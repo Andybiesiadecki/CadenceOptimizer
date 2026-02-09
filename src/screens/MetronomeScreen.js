@@ -234,13 +234,21 @@ export default function MetronomeScreenSimple() {
         
         // Start Fartlek workout if in fartlek mode
         if (mode === 'fartlek') {
+          console.log('Starting Fartlek workout with config:', {
+            baseCadence: cadence,
+            difficulty: fartlekDifficulty,
+            duration: 1800,
+            coachingEnabled: coachingEnabled,
+          });
           await WorkoutEngine.startFartlek({
             baseCadence: cadence,
             difficulty: fartlekDifficulty,
             duration: 1800, // 30 minutes
             coachingEnabled: coachingEnabled,
           });
-          setWorkoutStatus(WorkoutEngine.getStatus());
+          const status = WorkoutEngine.getStatus();
+          console.log('Fartlek workout status after start:', status);
+          setWorkoutStatus(status);
         }
         
         // Start Interval workout if in interval mode
