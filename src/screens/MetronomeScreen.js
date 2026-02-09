@@ -81,38 +81,12 @@ export default function MetronomeScreenSimple() {
 
   const handleCoachingCue = (message, type) => {
     console.log(`Coaching cue (${type}):`, message);
-    if (coachingEnabled) {
-      // Web fallback - show alert instead of voice
-      if (typeof window !== 'undefined') {
-        // Create a temporary notification
-        const notification = document.createElement('div');
-        notification.style.cssText = `
-          position: fixed;
-          top: 20px;
-          right: 20px;
-          background: #000000;
-          color: #FFFFFF;
-          padding: 12px 20px;
-          border-radius: 8px;
-          font-weight: bold;
-          z-index: 1000;
-          max-width: 300px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        `;
-        notification.textContent = `🎙️ ${message}`;
-        document.body.appendChild(notification);
-        
-        // Remove after 3 seconds
-        setTimeout(() => {
-          if (notification.parentNode) {
-            notification.parentNode.removeChild(notification);
-          }
-        }, 3000);
-      } else {
-        // Mobile - use actual voice service
-        CoachingVoiceService.speak(message, type);
-      }
-    }
+    // Always show coaching cues when workout is active
+    // Mobile - use actual voice service
+    CoachingVoiceService.speak(message, type);
+    
+    // Also show visual notification for better UX
+    Alert.alert('🎙️ Coach', message, [{ text: 'OK' }]);
   };
 
   useEffect(() => {

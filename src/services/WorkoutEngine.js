@@ -711,7 +711,7 @@ export class WorkoutEngine {
       const delay = cue.timing * phase.duration * 1000;
       setTimeout(() => {
         if (this.isActive && this.callbacks.onCoachingCue) {
-          this.callbacks.onCoachingCue(cue, phase);
+          this.callbacks.onCoachingCue(cue.message, cue.type);
         }
       }, delay);
     });

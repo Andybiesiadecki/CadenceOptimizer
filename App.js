@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
+import { Text } from 'react-native';
 
 import HomeScreen from './src/screens/HomeScreen';
 import AnalysisScreen from './src/screens/AnalysisScreen';
@@ -52,9 +53,9 @@ export default function App() {
             backgroundColor: '#FFFFFF',
             borderTopColor: '#E5E5E5',
             borderTopWidth: 1,
-            paddingTop: 8,
-            paddingBottom: 8,
-            height: 70,
+            paddingTop: 12,
+            paddingBottom: 12,
+            height: 85,
             shadowColor: '#000000',
             shadowOffset: { width: 0, height: -2 },
             shadowOpacity: 0.1,
@@ -62,10 +63,14 @@ export default function App() {
             elevation: 10,
           },
           tabBarLabelStyle: {
-            fontSize: 11,
-            fontWeight: '700',
-            letterSpacing: 1,
+            fontSize: 13,
+            fontWeight: '900',
+            letterSpacing: 1.2,
             textTransform: 'uppercase',
+            marginTop: 4,
+          },
+          tabBarIconStyle: {
+            marginTop: 4,
           },
           headerStyle: {
             backgroundColor: '#FFFFFF',
@@ -91,7 +96,7 @@ export default function App() {
           component={HomeScreen}
           options={{ 
             title: 'STRDR',
-            tabBarIcon: ({ color }) => '⚡',
+            tabBarIcon: ({ color }) => <Text style={{ fontSize: 28 }}>⚡</Text>,
             tabBarLabel: 'HOME'
           }}
         />
@@ -100,7 +105,7 @@ export default function App() {
           component={AnalysisScreen}
           options={{ 
             title: 'ANALYSIS',
-            tabBarIcon: ({ color }) => '📊',
+            tabBarIcon: ({ color }) => <Text style={{ fontSize: 28 }}>📊</Text>,
             tabBarLabel: 'ANALYSIS'
           }}
         />
@@ -109,7 +114,7 @@ export default function App() {
           component={MetronomeScreen}
           options={{ 
             title: 'METRONOME',
-            tabBarIcon: ({ color }) => '🎵',
+            tabBarIcon: ({ color }) => <Text style={{ fontSize: 28 }}>🎵</Text>,
             tabBarLabel: 'METRONOME'
           }}
         />
@@ -118,7 +123,7 @@ export default function App() {
           component={TargetsScreen}
           options={{ 
             title: 'TARGETS',
-            tabBarIcon: ({ color }) => '🎯',
+            tabBarIcon: ({ color }) => <Text style={{ fontSize: 28 }}>🎯</Text>,
             tabBarLabel: 'TARGETS'
           }}
         />
@@ -127,7 +132,7 @@ export default function App() {
           component={RunnerProfileSetup}
           options={{ 
             title: 'PROFILE',
-            tabBarIcon: ({ color }) => '👤',
+            tabBarIcon: ({ color }) => <Text style={{ fontSize: 28 }}>👤</Text>,
             tabBarLabel: 'PROFILE'
           }}
         />

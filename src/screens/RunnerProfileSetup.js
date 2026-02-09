@@ -122,26 +122,27 @@ export default function RunnerProfileSetup({ navigation, onComplete }) {
       return;
     }
 
-    const height = parseFloat(profile.height);
-    const weight = parseFloat(profile.weight);
+    // Extract numeric values from formatted strings
+    const heightValue = parseFloat(profile.height.replace(/[^\d.]/g, ''));
+    const weightValue = parseFloat(profile.weight.replace(/[^\d.]/g, ''));
     const age = parseInt(profile.age);
 
     // Validate ranges
     if (units === 'metric') {
-      if (height < 120 || height > 220) {
+      if (heightValue < 120 || heightValue > 220) {
         showError('Please enter a height between 120-220 cm.');
         return;
       }
-      if (weight < 30 || weight > 200) {
+      if (weightValue < 30 || weightValue > 200) {
         showError('Please enter a weight between 30-200 kg.');
         return;
       }
     } else {
-      if (height < 48 || height > 84) {
+      if (heightValue < 48 || heightValue > 84) {
         showError('Please enter a height between 48-84 inches.');
         return;
       }
-      if (weight < 66 || weight > 440) {
+      if (weightValue < 66 || weightValue > 440) {
         showError('Please enter a weight between 66-440 lbs.');
         return;
       }
@@ -156,8 +157,8 @@ export default function RunnerProfileSetup({ navigation, onComplete }) {
 
     try {
       // Convert to metric if needed and calculate additional metrics
-      const heightInCm = units === 'metric' ? height : height * 2.54;
-      const weightInKg = units === 'metric' ? weight : weight * 0.453592;
+      const heightInCm = units === 'metric' ? heightValue : heightValue * 2.54;
+      const weightInKg = units === 'metric' ? weightValue : weightValue * 0.453592;
       
       // Calculate stride length estimate (height * 0.43 for average runner)
       const estimatedStrideLength = heightInCm * 0.43;
@@ -271,6 +272,100 @@ export default function RunnerProfileSetup({ navigation, onComplete }) {
       }
     }));
   };
+
+  // Format time input to auto-add colons (MM:SS or H:MM:SS)
+  const formatTimeInput = (value) => {
+    // Remove all non-numeric characters
+    const numbers = value.replace(/[^\d]/g, '');
+    
+    if (numbers.length === 0) return '';
+    if (numbers.length <= 2) return numbers;
+    if (numbers.length <= 4) {
+      // MM:SS format
+      return `${numbers.slice(0, 2)}:${numbers.slice(2)}`;
+    }
+    // H:MM:SS format for longer times
+    const hours = numbers.slice(0, numbers.length - 4);
+    const minutes = numbers.slice(numbers.length - 4, numbers.length - 2);
+    const seconds = numbers.slice(numbers.length - 2);
+    return `${hours}:${minutes}:${seconds}`;
+  };
+
+  const handleTimeInput = (distance, value) => {
+    const formatted = formatTimeInput(value);
+    updateRaceTime(distance, formatted);
+  };
+
+  // Format pace input to auto-add /mile or /km
+  const formatPaceInput = (value) => {
+    // Remove existing unit suffixes
+    let cleanValue = value.replace(/\s*\/\s*(mile|km|mi)$/i, '').trim();
+    
+    // If empty, return empty
+    if (!cleanValue) return '';
+    
+    // Add the appropriate unit based on current setting
+    const unit = units === 'metric' ? '/km' : '/mile';
+    return `${cleanValue} ${unit}`;
+  };
+
+  const handlePaceInput = (value) => {
+    // Only format when user stops typing (on blur) or when they type a space
+    // For now, just store the raw value and format on blur
+    updateProfile('comfortablePace', value);
+  };
+
+  const handlePaceBlur = () => {
+    // Format the pace when user finishes typing
+    if (profile.comfortablePace) {
+      const formatted = formatPaceInput(profile.comfortablePace);
+      updateProfile('comfortablePace', formatted);
+    }
+  };
+
+  // Format height input to auto-add cm or in
+  const formatHeightInput = (value) => {
+    // Remove existing unit suffixes
+    let cleanValue = value.replace(/\s*(cm|in|inches?)$/i, '').trim();
+    
+    if (!cleanValue) return '';
+    
+    const unit = units === 'metric' ? ' cm' : ' in';
+    return `${cleanValue}${unit}`;
+  };
+
+  const handleHeightInput = (value) => {
+    updateProfile('height', value);
+  };
+
+  const handleHeightBlur = () => {
+    if (profile.height) {
+      const formatted = formatHeightInput(profile.height);
+      updateProfile('height', formatted);
+    }
+  };
+
+  // Format weight input to auto-add kg or lbs
+  const formatWeightInput = (value) => {
+    // Remove existing unit suffixes
+    let cleanValue = value.replace(/\s*(kg|lbs?|pounds?)$/i, '').trim();
+    
+    if (!cleanValue) return '';
+    
+    const unit = units === 'metric' ? ' kg' : ' lbs';
+    return `${cleanValue}${unit}`;
+  };
+
+  const handleWeightInput = (value) => {
+    updateProfile('weight', value);
+  };
+
+  const handleWeightBlur = () => {
+    if (profile.weight) {
+      const formatted = formatWeightInput(profile.weight);
+      updateProfile('weight', formatted);
+    }
+  };
   // Step Components
   const renderStepIndicator = () => (
     <View style={styles.stepIndicator}>
@@ -353,30 +448,34 @@ export default function RunnerProfileSetup({ navigation, onComplete }) {
 
       {/* Height */}
       <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>
-          Height {units === 'metric' ? '(cm)' : '(inches)'} *
-        </Text>
+        <Text style={styles.inputLabel}>Height *</Text>
         <TextInput
           style={styles.input}
           placeholder={units === 'metric' ? 'e.g., 175' : 'e.g., 69'}
           value={profile.height}
-          onChangeText={(value) => updateProfile('height', value)}
+          onChangeText={handleHeightInput}
+          onBlur={handleHeightBlur}
           keyboardType="numeric"
         />
+        <Text style={styles.inputHint}>
+          Just type the number - we'll add {units === 'metric' ? 'cm' : 'inches'} automatically
+        </Text>
       </View>
 
       {/* Weight */}
       <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>
-          Weight {units === 'metric' ? '(kg)' : '(lbs)'} *
-        </Text>
+        <Text style={styles.inputLabel}>Weight *</Text>
         <TextInput
           style={styles.input}
           placeholder={units === 'metric' ? 'e.g., 70' : 'e.g., 154'}
           value={profile.weight}
-          onChangeText={(value) => updateProfile('weight', value)}
+          onChangeText={handleWeightInput}
+          onBlur={handleWeightBlur}
           keyboardType="numeric"
         />
+        <Text style={styles.inputHint}>
+          Just type the number - we'll add {units === 'metric' ? 'kg' : 'lbs'} automatically
+        </Text>
       </View>
     </View>
   );
@@ -484,15 +583,16 @@ export default function RunnerProfileSetup({ navigation, onComplete }) {
 
       {/* Recent Race Times */}
       <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>Recent Race Times (MM:SS format)</Text>
+        <Text style={styles.inputLabel}>Recent Race Times (just type numbers)</Text>
         
         <View style={styles.raceTimeRow}>
           <Text style={styles.raceLabel}>5K:</Text>
           <TextInput
             style={styles.timeInput}
-            placeholder="25:30"
+            placeholder="2530 → 25:30"
             value={profile.recentRaceTimes['5k']}
-            onChangeText={(value) => updateRaceTime('5k', value)}
+            onChangeText={(value) => handleTimeInput('5k', value)}
+            keyboardType="numeric"
           />
         </View>
 
@@ -500,9 +600,10 @@ export default function RunnerProfileSetup({ navigation, onComplete }) {
           <Text style={styles.raceLabel}>10K:</Text>
           <TextInput
             style={styles.timeInput}
-            placeholder="52:15"
+            placeholder="5215 → 52:15"
             value={profile.recentRaceTimes['10k']}
-            onChangeText={(value) => updateRaceTime('10k', value)}
+            onChangeText={(value) => handleTimeInput('10k', value)}
+            keyboardType="numeric"
           />
         </View>
 
@@ -510,9 +611,10 @@ export default function RunnerProfileSetup({ navigation, onComplete }) {
           <Text style={styles.raceLabel}>Half Marathon:</Text>
           <TextInput
             style={styles.timeInput}
-            placeholder="1:55:30"
+            placeholder="15530 → 1:55:30"
             value={profile.recentRaceTimes['half_marathon']}
-            onChangeText={(value) => updateRaceTime('half_marathon', value)}
+            onChangeText={(value) => handleTimeInput('half_marathon', value)}
+            keyboardType="numeric"
           />
         </View>
 
@@ -520,22 +622,27 @@ export default function RunnerProfileSetup({ navigation, onComplete }) {
           <Text style={styles.raceLabel}>Marathon:</Text>
           <TextInput
             style={styles.timeInput}
-            placeholder="4:15:00"
+            placeholder="41500 → 4:15:00"
             value={profile.recentRaceTimes['marathon']}
-            onChangeText={(value) => updateRaceTime('marathon', value)}
+            onChangeText={(value) => handleTimeInput('marathon', value)}
+            keyboardType="numeric"
           />
         </View>
       </View>
 
       {/* Comfortable Pace */}
       <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>Comfortable Easy Pace (per mile/km)</Text>
+        <Text style={styles.inputLabel}>Comfortable Easy Pace</Text>
         <TextInput
           style={styles.input}
-          placeholder={units === 'metric' ? '6:00 /km' : '9:30 /mile'}
+          placeholder={units === 'metric' ? 'e.g., 6:00' : 'e.g., 9:30'}
           value={profile.comfortablePace}
-          onChangeText={(value) => updateProfile('comfortablePace', value)}
+          onChangeText={handlePaceInput}
+          onBlur={handlePaceBlur}
         />
+        <Text style={styles.inputHint}>
+          Just type the time (e.g., "6:00") - we'll add {units === 'metric' ? '/km' : '/mile'} automatically
+        </Text>
       </View>
 
       {/* Current Cadence */}
@@ -788,7 +895,11 @@ export default function RunnerProfileSetup({ navigation, onComplete }) {
         {renderStepIndicator()}
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.content} 
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
         {currentStep === 1 && renderStep1()}
         {currentStep === 2 && renderStep2()}
         {currentStep === 3 && renderStep3()}
@@ -817,16 +928,10 @@ export default function RunnerProfileSetup({ navigation, onComplete }) {
             disabled={loading}
           >
             <Text style={styles.navButtonPrimaryText}>
-              {loading ? 'Creating Profile...' : 'Complete Setup 🎉'}
+              {loading ? 'Creating...' : 'Complete 🎉'}
             </Text>
           </TouchableOpacity>
         )}
-      </View>
-
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>
-          Your data is stored locally and never shared. You can edit your profile anytime.
-        </Text>
       </View>
     </View>
   );
@@ -883,7 +988,10 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  contentContainer: {
     padding: 16,
+    paddingBottom: 100, // Add padding so content doesn't get hidden behind fixed buttons
   },
   stepTitle: {
     fontSize: 22,
@@ -906,6 +1014,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
     marginBottom: 8,
+  },
+  inputHint: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 6,
+    fontStyle: 'italic',
   },
   input: {
     backgroundColor: '#fff',
@@ -1099,41 +1213,53 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   navigation: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
-    padding: 16,
-    backgroundColor: '#fff',
+    padding: 12,
+    paddingBottom: 16,
+    backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderTopColor: '#eee',
+    borderTopColor: '#E5E5E5',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 10,
   },
   navButton: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#F8F8F8',
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
+    borderColor: '#E5E5E5',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
   },
   navButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#000000',
+    letterSpacing: 0.3,
   },
   navSpacer: {
     flex: 1,
   },
   navButtonPrimary: {
     backgroundColor: '#000000',
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
   },
   navButtonDisabled: {
-    backgroundColor: '#ccc',
+    backgroundColor: '#CCCCCC',
   },
   navButtonPrimaryText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.3,
   },
   footer: {
     padding: 16,

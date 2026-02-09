@@ -51,31 +51,9 @@ export default function HomeScreen({ navigation }) {
   return (
     <>
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Hero Section */}
-      <View style={styles.heroSection}>
-        <View style={styles.heroBackground}>
-          <View style={styles.heroGlow} />
-        </View>
-        <View style={styles.heroContent}>
-          <Text style={styles.heroTitle}>STRDR</Text>
-          <Text style={styles.heroSubtitle}>CADENCE AND SPEED OPTIMIZER</Text>
-          <View style={styles.heroStats}>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>170</Text>
-              <Text style={styles.statLabel}>OPTIMAL SPM</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>AI</Text>
-              <Text style={styles.statLabel}>POWERED</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>GPS</Text>
-              <Text style={styles.statLabel}>ADAPTIVE</Text>
-            </View>
-          </View>
-        </View>
+      {/* Logo Section */}
+      <View style={styles.logoSection}>
+        <Text style={styles.logoText}>STRDR</Text>
       </View>
 
       {/* Quick Actions Section */}
@@ -193,104 +171,25 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   
-  // Hero Section Styles
-  heroSection: {
-    height: 280,
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  heroBackground: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: '#F8F8F8',
-  },
-  heroGlow: {
-    position: 'absolute',
-    top: -50,
-    left: -50,
-    right: -50,
-    height: 200,
-    backgroundColor: 'rgba(0, 0, 0, 0.02)',
-    borderRadius: 200,
-    transform: [{ scaleX: 2 }],
-  },
-  heroContent: {
-    flex: 1,
-    justifyContent: 'center',
+  // Logo Section Styles
+  logoSection: {
+    paddingTop: 32,
+    paddingBottom: 24,
     alignItems: 'center',
-    paddingHorizontal: 24,
-    zIndex: 1,
+    backgroundColor: '#FFFFFF',
   },
-  heroTitle: {
-    fontSize: 56,
+  logoText: {
+    fontSize: 48,
     fontWeight: '900',
     color: '#000000',
     letterSpacing: 8,
     textAlign: 'center',
   },
-  heroTitleAccent: {
-    fontSize: 42,
-    fontWeight: '900',
-    color: '#000000',
-    letterSpacing: 3,
-    textAlign: 'center',
-    marginTop: -8,
-  },
-  heroSubtitle: {
-    fontSize: 16,
-    color: '#666666',
-    fontWeight: '600',
-    letterSpacing: 2,
-    textAlign: 'center',
-    marginTop: 12,
-    marginBottom: 32,
-    textTransform: 'uppercase',
-  },
-  heroStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  statItem: {
-    alignItems: 'center',
-    paddingHorizontal: 16,
-  },
-  statNumber: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: '#000000',
-    letterSpacing: 1,
-  },
-  statLabel: {
-    fontSize: 11,
-    color: '#666666',
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    marginTop: 4,
-  },
-  statDivider: {
-    width: 1,
-    height: 30,
-    backgroundColor: '#E5E5E5',
-  },
-
+  
   // Actions Section Styles
   actionsSection: {
     padding: 24,
-    paddingTop: 32,
+    paddingTop: 24,
   },
   sectionTitle: {
     fontSize: 24,
