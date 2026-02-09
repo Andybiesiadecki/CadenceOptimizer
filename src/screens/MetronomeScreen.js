@@ -567,14 +567,14 @@ export default function MetronomeScreenSimple() {
             <Text style={styles.controlLabel}>WORKOUT STATUS</Text>
             <View style={styles.statusCard}>
               <Text style={styles.statusPhase}>
-                Phase {workoutStatus.currentPhase + 1}/{workoutStatus.totalPhases}
+                Phase {workoutStatus.currentPhase + 1}/{workoutStatus.workout?.phases?.length || 0}
               </Text>
               <Text style={styles.statusDescription}>
-                {workoutStatus.currentPhaseData?.name || 'Active'}
+                {workoutStatus.phase?.type?.toUpperCase() || 'Active'}
               </Text>
               <Text style={styles.statusIntensity}>
-                {workoutStatus.currentPhaseData?.intensity === 'hard' ? '🔥 HIGH INTENSITY' :
-                 workoutStatus.currentPhaseData?.intensity === 'easy' ? '😌 RECOVERY' : '⚡ MODERATE'}
+                {workoutStatus.phase?.intensity === 'hard' ? '🔥 HIGH INTENSITY' :
+                 workoutStatus.phase?.intensity === 'easy' ? '😌 RECOVERY' : '⚡ MODERATE'}
               </Text>
               <View style={styles.progressBar}>
                 <View 
