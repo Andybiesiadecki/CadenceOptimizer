@@ -101,11 +101,20 @@ export default function MetronomeScreenSimple() {
     // Initialize coaching voice
     CoachingVoiceService.initialize();
 
+    // Update workout status every second when active
+    const statusInterval = setInterval(() => {
+      const status = WorkoutEngine.getStatus();
+      if (status.active) {
+        setWorkoutStatus(status);
+      }
+    }, 1000);
+
     return () => {
       MetronomeService.cleanup();
       WorkoutEngine.stopWorkout();
       CoachingVoiceService.stopSpeaking();
       stopLocationTracking();
+      clearInterval(statusInterval);
     };
   }, []);
 
