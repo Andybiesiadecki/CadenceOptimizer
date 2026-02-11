@@ -661,6 +661,7 @@ export class WorkoutEngine {
    */
   async startPhase(phaseIndex) {
     if (!this.currentWorkout || phaseIndex >= this.currentWorkout.phases.length) {
+      console.log('[FARTLEK] All phases complete, finishing workout');
       return this.completeWorkout();
     }
 
@@ -668,7 +669,13 @@ export class WorkoutEngine {
     this.currentPhase = phaseIndex;
     this.phaseStartTime = Date.now();
 
-    console.log(`Starting phase ${phaseIndex + 1}/${this.currentWorkout.phases.length}:`, phase);
+    console.log(`[FARTLEK] Starting phase ${phaseIndex + 1}/${this.currentWorkout.phases.length}:`, {
+      cadence: phase.cadence,
+      duration: phase.duration,
+      intensity: phase.intensity,
+      type: phase.type,
+      coachingCues: phase.coachingCues?.length || 0
+    });
 
     // Apply terrain adjustment if enabled
     let adjustedCadence = phase.cadence;
@@ -676,14 +683,17 @@ export class WorkoutEngine {
       const terrainAdjustment = this.getTerrainAdjustment();
       adjustedCadence = Math.round(phase.cadence + terrainAdjustment);
       adjustedCadence = Math.max(150, Math.min(200, adjustedCadence));
+      console.log(`[FARTLEK] Terrain adjustment: ${terrainAdjustment} SPM, adjusted cadence: ${adjustedCadence}`);
     }
 
     // Notify callbacks
     if (this.callbacks.onPhaseChange) {
+      console.log(`[FARTLEK] Calling onPhaseChange callback`);
       this.callbacks.onPhaseChange(phase, phaseIndex, this.currentWorkout.phases.length);
     }
 
     if (this.callbacks.onCadenceChange) {
+      console.log(`[FARTLEK] Calling onCadenceChange callback with cadence ${adjustedCadence}`);
       this.callbacks.onCadenceChange(adjustedCadence, phase.cadence);
     }
 
@@ -691,8 +701,10 @@ export class WorkoutEngine {
     this.scheduleCoachingCues(phase);
 
     // Schedule next phase
+    console.log(`[FARTLEK] Scheduling next phase in ${phase.duration} seconds`);
     setTimeout(() => {
       if (this.isActive) {
+        console.log(`[FARTLEK] Phase ${phaseIndex + 1} complete, moving to next phase`);
         this.stats.phasesCompleted++;
         this.stats.cadenceChanges++;
         this.startPhase(phaseIndex + 1);
@@ -706,7 +718,7 @@ export class WorkoutEngine {
    */
   scheduleCoachingCues(phase) {
     if (!phase.coachingCues || !this.callbacks.onCoachingCue) {
-      console.log('No coaching cues to schedule:', { 
+      console.log('[FARTLEK] No coaching cues to schedule:', { 
         hasCues: !!phase.coachingCues, 
         hasCallback: !!this.callbacks.onCoachingCue,
         cuesLength: phase.coachingCues?.length 
@@ -714,14 +726,16 @@ export class WorkoutEngine {
       return;
     }
 
-    console.log(`Scheduling ${phase.coachingCues.length} coaching cues for phase`);
-    phase.coachingCues.forEach(cue => {
+    console.log(`[FARTLEK] Scheduling ${phase.coachingCues.length} coaching cues for phase`);
+    phase.coachingCues.forEach((cue, index) => {
       const delay = cue.timing * phase.duration * 1000;
-      console.log(`Scheduling cue "${cue.message}" in ${delay}ms`);
+      console.log(`[FARTLEK] Scheduling cue ${index + 1}/${phase.coachingCues.length}: "${cue.message}" in ${Math.round(delay/1000)}s (${cue.type})`);
       setTimeout(() => {
         if (this.isActive && this.callbacks.onCoachingCue) {
-          console.log(`Firing coaching cue: "${cue.message}" (${cue.type})`);
+          console.log(`[FARTLEK] Firing coaching cue: "${cue.message}" (${cue.type})`);
           this.callbacks.onCoachingCue(cue.message, cue.type);
+        } else {
+          console.log(`[FARTLEK] Skipping cue - workout not active or no callback`);
         }
       }, delay);
     });

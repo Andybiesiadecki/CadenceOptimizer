@@ -44,9 +44,14 @@ export class CoachingVoiceService {
    * @param {Object} options - Speech options
    */
   async speak(message, options = {}) {
-    if (!this.isEnabled || !message) return;
+    if (!this.isEnabled || !message) {
+      console.log('[FARTLEK] Speech disabled or no message');
+      return;
+    }
 
     await this.initialize();
+
+    console.log(`[FARTLEK] Speak called with message: "${message}"`);
 
     const speechOptions = {
       rate: options.rate || this.rate,
@@ -58,13 +63,16 @@ export class CoachingVoiceService {
 
     // Handle interruption
     if (speechOptions.interrupt && this.isSpeaking) {
+      console.log('[FARTLEK] Interrupting current speech');
       this.stopSpeaking();
     }
 
     // Add to queue or speak immediately
     if (speechOptions.priority === 'urgent' || !this.isSpeaking) {
+      console.log('[FARTLEK] Speaking immediately');
       await this.speakNow(message, speechOptions);
     } else {
+      console.log('[FARTLEK] Adding to speech queue');
       this.speechQueue.push({ message, options: speechOptions });
       this.processQueue();
     }
@@ -77,18 +85,20 @@ export class CoachingVoiceService {
    */
   async speakNow(message, options) {
     this.isSpeaking = true;
+    console.log(`[FARTLEK] speakNow called, platform: ${this.platform}`);
 
     try {
       if (this.platform === 'mobile' && speak && typeof speak === 'function') {
+        console.log('[FARTLEK] Using mobile speech');
         await this.speakMobile(message, options);
       } else {
         // Fallback - just log the message
-        console.log(`🗣️ Coach: ${message}`);
+        console.log(`[FARTLEK] 🗣️ Coach (fallback): ${message}`);
         this.isSpeaking = false;
       }
     } catch (error) {
-      console.error('Error speaking message:', error);
-      console.log(`🗣️ Coach (fallback): ${message}`);
+      console.error('[FARTLEK] Error speaking message:', error);
+      console.log(`[FARTLEK] 🗣️ Coach (error fallback): ${message}`);
       this.isSpeaking = false;
     }
   }
@@ -100,24 +110,33 @@ export class CoachingVoiceService {
    */
   async speakMobile(message, options) {
     try {
+      console.log(`[FARTLEK] Calling expo-speech speak() with:`, {
+        message,
+        language: 'en-US',
+        pitch: options.pitch || this.pitch,
+        rate: options.rate || this.rate,
+        volume: options.volume || this.volume
+      });
+      
       speak(message, {
         language: 'en-US',
         pitch: options.pitch || this.pitch,
         rate: options.rate || this.rate,
         volume: options.volume || this.volume,
         onDone: () => {
+          console.log('[FARTLEK] Speech completed');
           this.isSpeaking = false;
           this.processQueue();
         },
         onError: (error) => {
-          console.error('Mobile speech error:', error);
+          console.error('[FARTLEK] Mobile speech error:', error);
           this.isSpeaking = false;
           this.processQueue();
         }
       });
     } catch (error) {
-      console.error('Error with mobile speech:', error);
-      console.log(`🗣️ Coach (fallback): ${message}`);
+      console.error('[FARTLEK] Error with mobile speech:', error);
+      console.log(`[FARTLEK] 🗣️ Coach (fallback): ${message}`);
       this.isSpeaking = false;
       this.processQueue();
     }
@@ -193,7 +212,12 @@ export class CoachingVoiceService {
    * @param {Object} cue - Coaching cue object
    */
   async speakCoachingCue(cue) {
-    if (!cue || !cue.message) return;
+    if (!cue || !cue.message) {
+      console.log('[FARTLEK] No cue message to speak');
+      return;
+    }
+
+    console.log(`[FARTLEK] Speaking coaching cue: "${cue.message}" (${cue.type})`);
 
     const options = {
       interrupt: cue.priority === 'urgent',
@@ -228,6 +252,7 @@ export class CoachingVoiceService {
         options.volume = 0.8;
     }
 
+    console.log(`[FARTLEK] Voice options:`, options);
     await this.speak(cue.message, options);
   }
 

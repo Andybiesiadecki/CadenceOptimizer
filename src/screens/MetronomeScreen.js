@@ -59,10 +59,13 @@ export default function MetronomeScreenSimple() {
   };
 
   const handleCadenceChange = (newCadence, reason) => {
-    console.log(`Cadence changed to ${newCadence} SPM (${reason})`);
+    console.log(`[FARTLEK] Cadence changed to ${newCadence} SPM (${reason}), isPlaying: ${isPlaying}`);
     setCadence(newCadence);
     if (isPlaying) {
+      console.log(`[FARTLEK] Updating metronome BPM to ${newCadence}`);
       MetronomeService.updateBpm(newCadence, handleBeat);
+    } else {
+      console.log(`[FARTLEK] Metronome not playing, skipping BPM update`);
     }
   };
 
@@ -80,10 +83,10 @@ export default function MetronomeScreenSimple() {
   };
 
   const handleCoachingCue = (message, type) => {
-    console.log(`Coaching cue (${type}):`, message);
+    console.log(`[FARTLEK] Coaching cue (${type}):`, message);
     // Always show coaching cues when workout is active
-    // Mobile - use actual voice service
-    CoachingVoiceService.speak(message, { type });
+    // Mobile - use actual voice service with proper cue format
+    CoachingVoiceService.speakCoachingCue({ message, type, priority: 'normal' });
     
     // Also show visual notification for better UX
     Alert.alert('🎙️ Coach', message, [{ text: 'OK' }]);
@@ -105,6 +108,7 @@ export default function MetronomeScreenSimple() {
     const statusInterval = setInterval(() => {
       const status = WorkoutEngine.getStatus();
       if (status.active) {
+        console.log(`[FARTLEK] Status update - Phase ${status.currentPhase + 1}/${status.workout?.phases?.length}, Time remaining: ${Math.round(status.phaseTimeRemaining)}s, Progress: ${Math.round(status.phaseProgress * 100)}%`);
         setWorkoutStatus(status);
       }
     }, 1000);
@@ -601,7 +605,7 @@ export default function MetronomeScreenSimple() {
                 />
               </View>
               <Text style={styles.statusTime}>
-                {Math.round((workoutStatus.phaseTimeRemaining || 0) / 1000)}s remaining
+                {Math.round(workoutStatus.phaseTimeRemaining || 0)}s remaining
               </Text>
             </View>
           </View>
