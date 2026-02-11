@@ -19,6 +19,7 @@ export default function MetronomeScreenSimple() {
   
   // Refs to avoid stale closures in callbacks
   const isPlayingRef = useRef(false);
+  const handleBeatRef = useRef(null);
   
   // Terrain mode states
   const [isTrackingLocation, setIsTrackingLocation] = useState(false);
@@ -71,7 +72,7 @@ export default function MetronomeScreenSimple() {
     setCadence(newCadence);
     if (isPlayingRef.current) {
       console.log(`[FARTLEK] Updating metronome BPM to ${newCadence}`);
-      MetronomeService.updateBpm(newCadence, handleBeat);
+      MetronomeService.updateBpm(newCadence, stableHandleBeat);
     } else {
       console.log(`[FARTLEK] Metronome not playing, skipping BPM update`);
     }
@@ -169,6 +170,16 @@ export default function MetronomeScreenSimple() {
       }),
     ]).start();
   };
+  
+  // Update handleBeat ref
+  handleBeatRef.current = handleBeat;
+  
+  // Stable callback that always uses current handleBeat
+  const stableHandleBeat = (beatNumber) => {
+    if (handleBeatRef.current) {
+      handleBeatRef.current(beatNumber);
+    }
+  };
 
   // Handle location updates for terrain detection
   const handleLocationUpdate = (location, locationHistory) => {
@@ -182,7 +193,7 @@ export default function MetronomeScreenSimple() {
       
       if (Math.abs(newCadence - cadence) >= 2) { // Only update if significant change
         setCadence(newCadence);
-        MetronomeService.updateBpm(newCadence, handleBeat);
+        MetronomeService.updateBpm(newCadence, stableHandleBeat);
       }
     }
   };
@@ -310,7 +321,7 @@ export default function MetronomeScreenSimple() {
           setWorkoutStatus(WorkoutEngine.getStatus());
         }
         
-        await MetronomeService.start(cadence, handleBeat, volume, audioEnabled);
+        await MetronomeService.start(cadence, stableHandleBeat, volume, audioEnabled);
         setIsPlaying(true);
       }
     } catch (error) {
@@ -322,14 +333,14 @@ export default function MetronomeScreenSimple() {
     const newCadence = Math.max(120, Math.min(200, cadence + change));
     setCadence(newCadence);
     if (isPlaying) {
-      MetronomeService.updateBpm(newCadence, handleBeat);
+      MetronomeService.updateBpm(newCadence, stableHandleBeat);
     }
   };
 
   const setPresetCadence = (newCadence) => {
     setCadence(newCadence);
     if (isPlaying) {
-      MetronomeService.updateBpm(newCadence, handleBeat);
+      MetronomeService.updateBpm(newCadence, stableHandleBeat);
     }
   };
 
