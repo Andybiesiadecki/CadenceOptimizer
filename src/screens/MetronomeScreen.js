@@ -20,6 +20,12 @@ export default function MetronomeScreenSimple() {
   // Refs to avoid stale closures in callbacks
   const isPlayingRef = useRef(false);
   const handleBeatRef = useRef(null);
+  const callbacksRef = useRef({
+    onPhaseChange: null,
+    onCadenceChange: null,
+    onWorkoutComplete: null,
+    onCoachingCue: null,
+  });
   
   // Terrain mode states
   const [isTrackingLocation, setIsTrackingLocation] = useState(false);
@@ -66,7 +72,7 @@ export default function MetronomeScreenSimple() {
     console.log(`Phase ${phaseIndex + 1}/${totalPhases}:`, phase);
     setWorkoutStatus(WorkoutEngine.getStatus());
   };
-
+  
   const handleCadenceChange = (newCadence, reason) => {
     console.log(`[FARTLEK] Cadence changed to ${newCadence} SPM (${reason}), isPlaying: ${isPlayingRef.current}`);
     setCadence(newCadence);
@@ -100,15 +106,26 @@ export default function MetronomeScreenSimple() {
     // Also show visual notification for better UX
     Alert.alert('🎙️ Coach', message, [{ text: 'OK' }]);
   };
+  
+  // Update callback refs
+  callbacksRef.current = {
+    onPhaseChange: handlePhaseChange,
+    onCadenceChange: handleCadenceChange,
+    onWorkoutComplete: handleWorkoutComplete,
+    onCoachingCue: handleCoachingCue,
+  };
+  
+  // Stable callback wrappers
+  const stableCallbacks = {
+    onPhaseChange: (...args) => callbacksRef.current.onPhaseChange?.(...args),
+    onCadenceChange: (...args) => callbacksRef.current.onCadenceChange?.(...args),
+    onWorkoutComplete: (...args) => callbacksRef.current.onWorkoutComplete?.(...args),
+    onCoachingCue: (...args) => callbacksRef.current.onCoachingCue?.(...args),
+  };
 
   useEffect(() => {
-    // Initialize workout engine callbacks
-    WorkoutEngine.setCallbacks({
-      onPhaseChange: handlePhaseChange,
-      onCadenceChange: handleCadenceChange,
-      onWorkoutComplete: handleWorkoutComplete,
-      onCoachingCue: handleCoachingCue,
-    });
+    // Initialize workout engine callbacks with stable wrappers
+    WorkoutEngine.setCallbacks(stableCallbacks);
 
     // Initialize coaching voice
     CoachingVoiceService.initialize();
