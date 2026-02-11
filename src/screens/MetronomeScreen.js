@@ -209,6 +209,13 @@ export default function MetronomeScreenSimple() {
   };
 
   const toggleMetronome = async () => {
+    // Show alert with current mode
+    Alert.alert('Mode Check', `Current mode: ${mode}`, [
+      { text: 'Continue', onPress: () => actualToggle() }
+    ]);
+  };
+
+  const actualToggle = async () => {
     console.log('[DEBUG] toggleMetronome called, mode:', mode, 'isPlaying:', isPlaying);
     try {
       if (isPlaying) {
