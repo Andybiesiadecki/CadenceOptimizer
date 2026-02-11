@@ -17,6 +17,9 @@ export default function MetronomeScreenSimple() {
   const [workoutStartTime, setWorkoutStartTime] = useState(null);
   const [mode, setMode] = useState('basic'); // basic, terrain, fartlek, interval, progressive
   
+  // Refs to avoid stale closures in callbacks
+  const isPlayingRef = useRef(false);
+  
   // Terrain mode states
   const [isTrackingLocation, setIsTrackingLocation] = useState(false);
   const [terrainData, setTerrainData] = useState({
@@ -51,6 +54,11 @@ export default function MetronomeScreenSimple() {
 
   // Animation values
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  
+  // Update ref when isPlaying changes
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
 
   // Workout Engine Callbacks
   const handlePhaseChange = (phase, phaseIndex, totalPhases) => {
@@ -59,9 +67,9 @@ export default function MetronomeScreenSimple() {
   };
 
   const handleCadenceChange = (newCadence, reason) => {
-    console.log(`[FARTLEK] Cadence changed to ${newCadence} SPM (${reason}), isPlaying: ${isPlaying}`);
+    console.log(`[FARTLEK] Cadence changed to ${newCadence} SPM (${reason}), isPlaying: ${isPlayingRef.current}`);
     setCadence(newCadence);
-    if (isPlaying) {
+    if (isPlayingRef.current) {
       console.log(`[FARTLEK] Updating metronome BPM to ${newCadence}`);
       MetronomeService.updateBpm(newCadence, handleBeat);
     } else {
