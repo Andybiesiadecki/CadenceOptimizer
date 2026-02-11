@@ -209,6 +209,7 @@ export default function MetronomeScreenSimple() {
   };
 
   const toggleMetronome = async () => {
+    console.log('[DEBUG] toggleMetronome called, mode:', mode, 'isPlaying:', isPlaying);
     try {
       if (isPlaying) {
         // Track workout stop
@@ -229,6 +230,7 @@ export default function MetronomeScreenSimple() {
           stopLocationTracking();
         }
       } else {
+        console.log('[DEBUG] Starting metronome, mode:', mode);
         // Track workout start
         analytics.trackFeatureUsage('metronome', 'workout_started', {
           mode: mode,
