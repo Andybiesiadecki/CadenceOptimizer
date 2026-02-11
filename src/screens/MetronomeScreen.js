@@ -239,6 +239,10 @@ export default function MetronomeScreenSimple() {
         
         setWorkoutStartTime(Date.now());
         
+        console.log('[DEBUG] Current mode:', mode);
+        console.log('[DEBUG] Mode type:', typeof mode);
+        console.log('[DEBUG] Mode === "fartlek":', mode === 'fartlek');
+        
         // Start location tracking if in terrain mode
         if (mode === 'terrain') {
           setBaseCadence(cadence); // Store original cadence
