@@ -99,11 +99,14 @@ const stableCallbacks = {
 
 ## Next Steps
 
-1. **Build v12** (when free tier resets or after upgrading Expo plan)
+1. **Build v12 locally** - Use local development build to test immediately
+   - See `QUICK_START_DEV_BUILD.md` for quick commands
+   - See `LOCAL_DEV_BUILD_GUIDE.md` for detailed instructions
 2. **Test voice coaching** - should hear voice and see alerts
 3. **Remove debug alert** - the "Mode Check" popup once confirmed working
 4. **Test other workout modes** - Interval and Progressive should also work
 5. **Final cleanup** - remove [FARTLEK] debug logs if desired
+6. **Production build** - Upload to TestFlight when Expo free tier resets (March 1, 2026)
 
 ## Files Modified
 
