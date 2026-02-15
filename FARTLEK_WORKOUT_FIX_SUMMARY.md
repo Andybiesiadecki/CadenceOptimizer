@@ -80,10 +80,24 @@ const stableCallbacks = {
 - **CONFIRMED WORKING**: Cadence now changes through all phases
 - Metronome pace updates correctly during workout
 
-### Build 12 (Ready to test)
+### Build 12 (Previous test)
 - Fixed stale closures for all WorkoutEngine callbacks
-- Should enable voice coaching and alert popups
-- **Cannot build yet**: Hit free tier limit (resets March 1, 2026)
+- **ISSUE FOUND**: Phases with no cadence change had 0 coaching cues
+- Console showed: `[FARTLEK] Scheduling 0 coaching cues for phase`
+- Root cause: `generateCoachingCues()` only created cues when `Math.abs(cadenceChange) > 5`
+
+### Build 13 (Ready to test) ✅
+- **Fixed coaching cue generation**: ALL phases now get coaching cues
+  - Added fallback cue for phases with no cadence change: "Maintain X steps per minute. Stay focused."
+  - Added `case 'base':` to intensity switch for base intensity phases
+- **Fixed metronome beat consistency**: 
+  - `updateBpm()` now smoothly transitions without stopping/restarting
+  - Added guard to skip update if BPM hasn't changed
+  - Prevents timing hiccups and beat counter resets
+- **Optimized cadence change detection**:
+  - `onCadenceChange` only called when cadence actually changes
+  - Prevents unnecessary metronome updates
+- Should now have voice coaching, alerts, AND smooth consistent beat
 
 ## Testing Results
 

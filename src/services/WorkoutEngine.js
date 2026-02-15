@@ -372,30 +372,36 @@ export class WorkoutEngine {
     const cues = [];
     const cadenceChange = newCadence - lastCadence;
 
-    // Phase start cue
-    if (Math.abs(cadenceChange) > 5) {
-      if (cadenceChange > 10) {
-        cues.push({
-          timing: 0,
-          message: `Speed play! Pick it up to ${newCadence} steps per minute`,
-          type: 'motivation',
-          priority: 'high'
-        });
-      } else if (cadenceChange < -5) {
-        cues.push({
-          timing: 0,
-          message: `Easy does it. Settle into ${newCadence} steps per minute`,
-          type: 'guidance',
-          priority: 'medium'
-        });
-      } else {
-        cues.push({
-          timing: 0,
-          message: `New cadence: ${newCadence} steps per minute`,
-          type: 'instruction',
-          priority: 'low'
-        });
-      }
+    // Phase start cue - ALWAYS provide a cue at phase start
+    if (Math.abs(cadenceChange) > 10) {
+      cues.push({
+        timing: 0,
+        message: `Speed play! Pick it up to ${newCadence} steps per minute`,
+        type: 'motivation',
+        priority: 'high'
+      });
+    } else if (cadenceChange < -5) {
+      cues.push({
+        timing: 0,
+        message: `Easy does it. Settle into ${newCadence} steps per minute`,
+        type: 'guidance',
+        priority: 'medium'
+      });
+    } else if (Math.abs(cadenceChange) > 5) {
+      cues.push({
+        timing: 0,
+        message: `New cadence: ${newCadence} steps per minute`,
+        type: 'instruction',
+        priority: 'medium'
+      });
+    } else {
+      // Even if cadence doesn't change, provide a cue
+      cues.push({
+        timing: 0,
+        message: `Maintain ${newCadence} steps per minute. Stay focused.`,
+        type: 'guidance',
+        priority: 'low'
+      });
     }
 
     // Mid-phase coaching based on intensity
@@ -426,6 +432,15 @@ export class WorkoutEngine {
         cues.push({
           timing: 0.5,
           message: 'Smooth and steady rhythm.',
+          type: 'guidance',
+          priority: 'low'
+        });
+        break;
+      case 'base':
+        // Add cue for base intensity phases too
+        cues.push({
+          timing: 0.5,
+          message: 'Good pace. Keep it steady.',
           type: 'guidance',
           priority: 'low'
         });
@@ -666,6 +681,7 @@ export class WorkoutEngine {
     }
 
     const phase = this.currentWorkout.phases[phaseIndex];
+    const previousPhase = phaseIndex > 0 ? this.currentWorkout.phases[phaseIndex - 1] : null;
     this.currentPhase = phaseIndex;
     this.phaseStartTime = Date.now();
 
@@ -692,9 +708,13 @@ export class WorkoutEngine {
       this.callbacks.onPhaseChange(phase, phaseIndex, this.currentWorkout.phases.length);
     }
 
-    if (this.callbacks.onCadenceChange) {
-      console.log(`[FARTLEK] Calling onCadenceChange callback with cadence ${adjustedCadence}`);
+    // Only call onCadenceChange if cadence actually changed
+    const previousCadence = previousPhase ? previousPhase.cadence : null;
+    if (this.callbacks.onCadenceChange && adjustedCadence !== previousCadence) {
+      console.log(`[FARTLEK] Calling onCadenceChange callback with cadence ${adjustedCadence} (previous: ${previousCadence})`);
       this.callbacks.onCadenceChange(adjustedCadence, phase.cadence);
+    } else if (adjustedCadence === previousCadence) {
+      console.log(`[FARTLEK] Cadence unchanged (${adjustedCadence}), skipping onCadenceChange callback`);
     }
 
     // Schedule coaching cues

@@ -220,11 +220,63 @@ export class MetronomeService {
    * @param {Function} onBeat - Beat callback
    */
   async updateBpm(newBpm, onBeat) {
-    if (this.isPlaying) {
-      this.stop();
-      await this.start(newBpm, onBeat);
+    // Don't update if BPM hasn't changed
+    if (newBpm === this.bpm) {
+      console.log(`[METRONOME] BPM unchanged (${newBpm}), skipping update`);
+      return;
     }
+
+    console.log(`[METRONOME] Updating BPM from ${this.bpm} to ${newBpm}`);
     this.bpm = newBpm;
+    
+    if (onBeat) {
+      this.onBeat = onBeat;
+    }
+
+    // If playing, smoothly transition to new BPM without stopping
+    if (this.isPlaying) {
+      // Clear the current scheduled beat
+      if (this.intervalId) {
+        clearTimeout(this.intervalId);
+        this.intervalId = null;
+      }
+
+      // Calculate new interval
+      const interval = (60 / newBpm) * 1000;
+      
+      // Reset timing to avoid drift
+      this.nextBeatTime = Date.now() + interval;
+
+      // Schedule next beat with new BPM
+      const scheduleBeat = () => {
+        if (!this.isPlaying) return;
+
+        const now = Date.now();
+        const drift = now - this.nextBeatTime;
+
+        // Schedule next beat
+        this.currentBeat++;
+        const isAccent = false;
+        
+        if (this.onBeat) {
+          this.onBeat(this.currentBeat, isAccent);
+        }
+        
+        if (this.audioEnabled) {
+          this.playSound(isAccent);
+        }
+
+        // Calculate next beat time with drift correction
+        this.nextBeatTime += interval;
+        const delay = Math.max(0, this.nextBeatTime - Date.now());
+
+        // Schedule next beat
+        this.intervalId = setTimeout(scheduleBeat, delay);
+      };
+
+      // Start immediately with new BPM
+      scheduleBeat();
+    }
   }
 
   /**
