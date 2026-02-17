@@ -1,12 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput } from 'react-native';
+import { getRunnerProfile } from '../utils/storage';
+import { 
+  parseTimeToMinutes, 
+  formatPace, 
+  calculateOptimalCadence,
+  calculateStrideLength,
+  paceToSpeed
+} from '../utils/calculations';
 
 export default function TargetsScreen() {
   const [selectedDistance, setSelectedDistance] = useState('10K');
   const [targetTime, setTargetTime] = useState('');
   const [result, setResult] = useState(null);
+  const [profile, setProfile] = useState(null);
 
   const distances = ['5K', '10K', 'Half Marathon', 'Marathon'];
+
+  // Distance to km mapping
+  const distanceToKm = {
+    '5K': 5,
+    '10K': 10,
+    'Half Marathon': 21.0975,
+    'Marathon': 42.195
+  };
+
+  // Load runner profile on mount
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  const loadProfile = async () => {
+    try {
+      const savedProfile = await getRunnerProfile();
+      setProfile(savedProfile);
+    } catch (error) {
+      console.log('No profile found, using defaults');
+    }
+  };
 
   // Clear results when distance changes
   const handleDistanceChange = (distance) => {
@@ -39,26 +70,58 @@ export default function TargetsScreen() {
 
   const calculateTarget = () => {
     if (!targetTime) {
+      console.log('No target time entered');
       return; // Don't calculate if no time entered
     }
 
-    // TODO: Implement actual calculation algorithm
-    // For now, return different values based on distance to show it's working
-    const distanceMultipliers = {
-      '5K': { cadence: 180, paceKm: '4:30', paceMi: '7:15', stride: 1.50 },
-      '10K': { cadence: 175, paceKm: '5:00', paceMi: '8:03', stride: 1.42 },
-      'Half Marathon': { cadence: 170, paceKm: '5:30', paceMi: '8:51', stride: 1.38 },
-      'Marathon': { cadence: 168, paceKm: '6:00', paceMi: '9:39', stride: 1.35 }
-    };
+    console.log('Calculating target for:', { selectedDistance, targetTime });
 
-    const values = distanceMultipliers[selectedDistance] || distanceMultipliers['10K'];
+    // Parse the target time to get total minutes
+    const totalMinutes = parseTimeToMinutes(targetTime);
+    console.log('Parsed total minutes:', totalMinutes);
     
-    setResult({
-      optimalCadence: values.cadence,
-      targetPaceKm: values.paceKm,
-      targetPaceMi: values.paceMi,
-      strideLength: values.stride,
-    });
+    if (totalMinutes === 0) {
+      console.log('Invalid time - totalMinutes is 0');
+      return; // Invalid time
+    }
+
+    // Get distance in km
+    const distanceKm = distanceToKm[selectedDistance];
+    console.log('Distance in km:', distanceKm);
+    
+    // Calculate pace per km (in minutes)
+    const paceMinKm = totalMinutes / distanceKm;
+    console.log('Pace per km:', paceMinKm);
+    
+    // Calculate pace per mile
+    const paceMinMi = paceMinKm * 1.60934;
+    
+    // Get runner profile data or use defaults
+    const height = profile?.height || 170; // cm
+    const experience = profile?.experience || 'intermediate';
+    console.log('Using profile:', { height, experience });
+    
+    // Calculate optimal cadence using the profile-aware function
+    const optimalCadence = calculateOptimalCadence(paceMinKm, height, experience);
+    console.log('Optimal cadence:', optimalCadence);
+    
+    // Calculate speed in km/h for stride length calculation
+    const speedKmh = paceToSpeed(paceMinKm);
+    console.log('Speed km/h:', speedKmh);
+    
+    // Calculate stride length in meters
+    const strideLength = calculateStrideLength(optimalCadence, speedKmh);
+    console.log('Stride length:', strideLength);
+    
+    const calculatedResult = {
+      optimalCadence,
+      targetPaceKm: formatPace(paceMinKm),
+      targetPaceMi: formatPace(paceMinMi),
+      strideLength: strideLength.toFixed(2),
+    };
+    
+    console.log('Final result:', calculatedResult);
+    setResult(calculatedResult);
   };
 
   return (
