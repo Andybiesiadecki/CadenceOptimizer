@@ -165,7 +165,6 @@ export class MetronomeService {
     this.currentBeat = 0;
     this.onBeat = onBeat;
 
-    console.log(`[METRONOME] Starting with BPM: ${bpm}, interval: ${(60 / bpm) * 1000}ms`);
     const interval = (60 / bpm) * 1000; // Convert BPM to milliseconds
     this.startTime = Date.now();
     this.nextBeatTime = this.startTime;
@@ -180,13 +179,6 @@ export class MetronomeService {
       // Schedule next beat
       this.currentBeat++;
       const isAccent = false; // No accent - all beats are the same
-      
-      // Log every 10th beat for debugging
-      if (this.currentBeat % 10 === 0) {
-        const elapsed = (now - this.startTime) / 1000;
-        const actualBPM = (this.currentBeat / elapsed) * 60;
-        console.log(`[METRONOME] Beat ${this.currentBeat}, Elapsed: ${elapsed.toFixed(1)}s, Actual BPM: ${actualBPM.toFixed(1)}, Target: ${this.bpm}`);
-      }
       
       if (this.onBeat) {
         this.onBeat(this.currentBeat, isAccent);
