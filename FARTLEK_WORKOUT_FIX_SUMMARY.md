@@ -123,7 +123,7 @@ const stableCallbacks = {
 
 ## Testing Results
 
-### Build 11 (Current working build)
+### Build 11
 ✅ Metronome starts
 ✅ Workout status section appears
 ✅ Progress bar moves
@@ -133,16 +133,37 @@ const stableCallbacks = {
 ❌ No voice coaching (fixed in build 12)
 ❌ No alert popups (fixed in build 12)
 
+### Build 15 (WORKING!) ✅
+✅ Metronome starts immediately
+✅ Metronome beats are audible
+✅ Workout status section appears
+✅ Progress bar moves
+✅ Time remaining counts down
+✅ Phases advance correctly (tested through 4 phases)
+✅ Voice coaching works - spoken cues are audible
+✅ Alert popups appear with coaching messages
+✅ Cadence changes when workout generates different cadence phases
+✅ Audio enabled by default
+✅ Coaching enabled by default
+
+**Note**: Fartlek workouts are randomized. Not every phase changes cadence - this is expected behavior. The workout generator uses a 40% change frequency for intermediate difficulty, and some phases intentionally maintain the same cadence for recovery or base pace work.
+
 ## Next Steps
 
-1. **Build v12 locally** - Use local development build to test immediately
-   - See `QUICK_START_DEV_BUILD.md` for quick commands
-   - See `LOCAL_DEV_BUILD_GUIDE.md` for detailed instructions
-2. **Test voice coaching** - should hear voice and see alerts
-3. **Remove debug alert** - the "Mode Check" popup once confirmed working
-4. **Test other workout modes** - Interval and Progressive should also work
-5. **Final cleanup** - remove [FARTLEK] debug logs if desired
-6. **Production build** - Upload to TestFlight when Expo free tier resets (March 1, 2026)
+1. ✅ **Build 15 tested and working!**
+2. **Continue testing** - Run through more Fartlek workouts to verify consistency
+3. **Test other workout modes** - Interval and Progressive should also work now
+4. **Optional cleanup** - Remove [FARTLEK] debug logs if desired (currently helpful for debugging)
+5. **Production build** - Upload to TestFlight when Expo free tier resets (March 1, 2026)
+
+## Status: RESOLVED ✅
+
+The Fartlek workout feature is now fully functional:
+- Metronome beats work correctly
+- Cadence changes are applied when phases have different cadences
+- Voice coaching speaks cues and shows alerts
+- Progress tracking works properly
+- All timing issues resolved
 
 ## Files Modified
 
