@@ -69,23 +69,28 @@ export default function MetronomeScreenSimple() {
 
   // Workout Engine Callbacks
   const handlePhaseChange = (phase, phaseIndex, totalPhases) => {
-    console.log(`Phase ${phaseIndex + 1}/${totalPhases}:`, phase);
+    console.log(`[SCREEN] ========== handlePhaseChange called ==========`);
+    console.log(`[SCREEN] Phase ${phaseIndex + 1}/${totalPhases}:`, phase);
     setWorkoutStatus(WorkoutEngine.getStatus());
+    console.log(`[SCREEN] ========== handlePhaseChange completed ==========`);
   };
   
   const handleCadenceChange = (newCadence, reason) => {
-    console.log(`[FARTLEK] Cadence changed to ${newCadence} SPM (${reason}), isPlaying: ${isPlayingRef.current}`);
+    console.log(`[SCREEN] ========== handleCadenceChange called ==========`);
+    console.log(`[SCREEN] Cadence changed to ${newCadence} SPM (${reason}), isPlaying: ${isPlayingRef.current}`);
     setCadence(newCadence);
     if (isPlayingRef.current) {
-      console.log(`[FARTLEK] Updating metronome BPM to ${newCadence}`);
+      console.log(`[SCREEN] Updating metronome BPM to ${newCadence}`);
       MetronomeService.updateBpm(newCadence, stableHandleBeat);
     } else {
-      console.log(`[FARTLEK] Metronome not playing, skipping BPM update`);
+      console.log(`[SCREEN] Metronome not playing, skipping BPM update`);
     }
+    console.log(`[SCREEN] ========== handleCadenceChange completed ==========`);
   };
 
   const handleWorkoutComplete = (workout, stats, completed) => {
-    console.log('Workout completed:', { workout: workout.name, stats, completed });
+    console.log(`[SCREEN] ========== handleWorkoutComplete called ==========`);
+    console.log('[SCREEN] Workout completed:', { workout: workout.name, stats, completed });
     setWorkoutStatus({ active: false });
     
     if (completed) {
@@ -95,19 +100,23 @@ export default function MetronomeScreenSimple() {
         [{ text: 'OK' }]
       );
     }
+    console.log(`[SCREEN] ========== handleWorkoutComplete completed ==========`);
   };
 
   const handleCoachingCue = (message, type) => {
-    console.log(`[FARTLEK] Coaching cue (${type}):`, message);
+    console.log(`[SCREEN] ========== handleCoachingCue called ==========`);
+    console.log(`[SCREEN] Coaching cue (${type}):`, message);
     // Always show coaching cues when workout is active
     // Mobile - use actual voice service with proper cue format
     CoachingVoiceService.speakCoachingCue({ message, type, priority: 'normal' });
     
     // Also show visual notification for better UX
     Alert.alert('🎙️ Coach', message, [{ text: 'OK' }]);
+    console.log(`[SCREEN] ========== handleCoachingCue completed ==========`);
   };
   
   // Update callback refs
+  console.log(`[SCREEN] Updating callbacksRef.current`);
   callbacksRef.current = {
     onPhaseChange: handlePhaseChange,
     onCadenceChange: handleCadenceChange,
@@ -117,13 +126,26 @@ export default function MetronomeScreenSimple() {
   
   // Stable callback wrappers
   const stableCallbacks = {
-    onPhaseChange: (...args) => callbacksRef.current.onPhaseChange?.(...args),
-    onCadenceChange: (...args) => callbacksRef.current.onCadenceChange?.(...args),
-    onWorkoutComplete: (...args) => callbacksRef.current.onWorkoutComplete?.(...args),
-    onCoachingCue: (...args) => callbacksRef.current.onCoachingCue?.(...args),
+    onPhaseChange: (...args) => {
+      console.log(`[SCREEN] stableCallbacks.onPhaseChange wrapper called`);
+      return callbacksRef.current.onPhaseChange?.(...args);
+    },
+    onCadenceChange: (...args) => {
+      console.log(`[SCREEN] stableCallbacks.onCadenceChange wrapper called`);
+      return callbacksRef.current.onCadenceChange?.(...args);
+    },
+    onWorkoutComplete: (...args) => {
+      console.log(`[SCREEN] stableCallbacks.onWorkoutComplete wrapper called`);
+      return callbacksRef.current.onWorkoutComplete?.(...args);
+    },
+    onCoachingCue: (...args) => {
+      console.log(`[SCREEN] stableCallbacks.onCoachingCue wrapper called`);
+      return callbacksRef.current.onCoachingCue?.(...args);
+    },
   };
 
   useEffect(() => {
+    console.log(`[SCREEN] ========== useEffect initializing ==========`);
     // Initialize workout engine callbacks with stable wrappers
     WorkoutEngine.setCallbacks(stableCallbacks);
 
@@ -139,7 +161,10 @@ export default function MetronomeScreenSimple() {
       }
     }, 1000);
 
+    console.log(`[SCREEN] ========== useEffect initialization complete ==========`);
+    
     return () => {
+      console.log(`[SCREEN] ========== useEffect cleanup ==========`);
       MetronomeService.cleanup();
       WorkoutEngine.stopWorkout();
       CoachingVoiceService.stopSpeaking();
