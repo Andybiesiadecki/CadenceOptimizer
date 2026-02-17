@@ -6,13 +6,20 @@ import { speak, stop } from 'expo-speech';
 export class CoachingVoiceService {
   constructor() {
     this.isEnabled = true;
-    this.rate = 1.0;
+    this.rate = 0.95; // Slightly slower for clarity
     this.pitch = 1.0;
-    this.volume = 0.8;
+    this.volume = 0.9; // Slightly louder
     this.isInitialized = false;
     this.speechQueue = [];
     this.isSpeaking = false;
     this.platform = 'mobile'; // Default to mobile since we're using expo-speech
+    this.voice = null; // Will be set to best available voice
+    this.preferredVoices = [
+      'com.apple.voice.compact.en-US.Samantha', // Natural female voice
+      'com.apple.ttsbundle.Samantha-compact',   // Enhanced Samantha
+      'com.apple.voice.compact.en-US.Alex',     // Natural male voice
+      'com.apple.ttsbundle.siri_female_en-US_compact', // Siri voice
+    ];
   }
 
   /**
@@ -24,8 +31,11 @@ export class CoachingVoiceService {
     try {
       // Test if speak function is available
       if (speak && typeof speak === 'function') {
+        // Try to get available voices and select the best one
+        await this.selectBestVoice();
         this.isInitialized = true;
         console.log('CoachingVoiceService initialized with expo-speech');
+        console.log('Selected voice:', this.voice || 'default');
       } else {
         console.log('expo-speech not available, using fallback');
         this.platform = 'fallback';
@@ -35,6 +45,46 @@ export class CoachingVoiceService {
       console.error('Failed to initialize CoachingVoiceService:', error);
       this.platform = 'fallback';
       this.isInitialized = true;
+    }
+  }
+
+  /**
+   * Select the best available voice
+   */
+  async selectBestVoice() {
+    try {
+      // Import getAvailableVoicesAsync from expo-speech
+      const { getAvailableVoicesAsync } = await import('expo-speech');
+      
+      if (getAvailableVoicesAsync && typeof getAvailableVoicesAsync === 'function') {
+        const voices = await getAvailableVoicesAsync();
+        console.log(`Found ${voices.length} available voices`);
+        
+        // Try to find one of our preferred voices
+        for (const preferredVoice of this.preferredVoices) {
+          const found = voices.find(v => v.identifier === preferredVoice);
+          if (found) {
+            this.voice = found.identifier;
+            console.log(`Selected preferred voice: ${this.voice}`);
+            return;
+          }
+        }
+        
+        // Fallback: find any high-quality English voice
+        const enVoice = voices.find(v => 
+          v.language.startsWith('en') && 
+          (v.quality === 'Enhanced' || v.quality === 'Premium')
+        );
+        
+        if (enVoice) {
+          this.voice = enVoice.identifier;
+          console.log(`Selected high-quality voice: ${this.voice}`);
+        } else {
+          console.log('Using default system voice');
+        }
+      }
+    } catch (error) {
+      console.log('Could not get available voices, using default:', error.message);
     }
   }
 
@@ -110,15 +160,7 @@ export class CoachingVoiceService {
    */
   async speakMobile(message, options) {
     try {
-      console.log(`[FARTLEK] Calling expo-speech speak() with:`, {
-        message,
-        language: 'en-US',
-        pitch: options.pitch || this.pitch,
-        rate: options.rate || this.rate,
-        volume: options.volume || this.volume
-      });
-      
-      speak(message, {
+      const speechOptions = {
         language: 'en-US',
         pitch: options.pitch || this.pitch,
         rate: options.rate || this.rate,
@@ -133,7 +175,21 @@ export class CoachingVoiceService {
           this.isSpeaking = false;
           this.processQueue();
         }
+      };
+      
+      // Add voice if we have one selected
+      if (this.voice) {
+        speechOptions.voice = this.voice;
+      }
+      
+      console.log(`[FARTLEK] Calling expo-speech speak() with:`, {
+        message,
+        ...speechOptions,
+        onDone: '[Function]',
+        onError: '[Function]'
       });
+      
+      speak(message, speechOptions);
     } catch (error) {
       console.error('[FARTLEK] Error with mobile speech:', error);
       console.log(`[FARTLEK] 🗣️ Coach (fallback): ${message}`);
@@ -224,32 +280,37 @@ export class CoachingVoiceService {
       priority: cue.priority,
     };
 
-    // Adjust voice parameters based on cue type
+    // Adjust voice parameters based on cue type for more natural delivery
     switch (cue.type) {
       case 'motivation':
-        options.rate = 1.1;
-        options.pitch = 1.1;
-        options.volume = 0.9;
+        // Energetic and encouraging
+        options.rate = 1.05;
+        options.pitch = 1.05;
+        options.volume = 1.0;
         break;
       case 'instruction':
+        // Clear and authoritative
         options.rate = 0.9;
         options.pitch = 1.0;
-        options.volume = 0.8;
+        options.volume = 0.95;
         break;
       case 'guidance':
-        options.rate = 0.8;
-        options.pitch = 0.9;
-        options.volume = 0.7;
+        // Calm and supportive
+        options.rate = 0.85;
+        options.pitch = 0.95;
+        options.volume = 0.85;
         break;
       case 'technique':
-        options.rate = 0.85;
+        // Focused and precise
+        options.rate = 0.88;
         options.pitch = 1.0;
-        options.volume = 0.8;
+        options.volume = 0.9;
         break;
       default:
-        options.rate = 1.0;
+        // Neutral delivery
+        options.rate = 0.95;
         options.pitch = 1.0;
-        options.volume = 0.8;
+        options.volume = 0.9;
     }
 
     console.log(`[FARTLEK] Voice options:`, options);
