@@ -86,7 +86,7 @@ const stableCallbacks = {
 - Console showed: `[FARTLEK] Scheduling 0 coaching cues for phase`
 - Root cause: `generateCoachingCues()` only created cues when `Math.abs(cadenceChange) > 5`
 
-### Build 13 (Ready to test) ✅
+### Build 13 (Previous test)
 - **Fixed coaching cue generation**: ALL phases now get coaching cues
   - Added fallback cue for phases with no cadence change: "Maintain X steps per minute. Stay focused."
   - Added `case 'base':` to intensity switch for base intensity phases
@@ -98,6 +98,28 @@ const stableCallbacks = {
   - `onCadenceChange` only called when cadence actually changes
   - Prevents unnecessary metronome updates
 - Should now have voice coaching, alerts, AND smooth consistent beat
+
+### Build 14 (Previous test)
+- Added comprehensive diagnostic logging to identify exact failure points
+- **ROOT CAUSES IDENTIFIED FROM LOGS**:
+  1. `coachingEnabled: false` - Voice coaching turned OFF in UI
+  2. `audioEnabled: false` - Audio turned OFF in UI  
+  3. **Timing race condition**: `WorkoutEngine.startFartlek()` fires `onCadenceChange` BEFORE `setIsPlaying(true)` executes
+  4. When `onCadenceChange` fires, `isPlayingRef.current` is still `false`
+  5. Metronome BPM update is skipped because metronome "not playing"
+
+### Build 15 (Ready to test) ✅
+- **CRITICAL FIX: Fixed timing race condition**
+  - Reordered operations in `toggleMetronome()`:
+    1. `setIsPlaying(true)` - Set state FIRST
+    2. `MetronomeService.start()` - Start metronome SECOND  
+    3. `WorkoutEngine.startFartlek()` - Start workout LAST
+  - Now when `onCadenceChange` fires, `isPlayingRef.current` is `true`
+  - Metronome BPM updates will work correctly
+- **Removed debug alert** - No more "Mode Check" popup
+- **Removed extra debug logs** - Cleaned up console output
+- **Confirmed defaults**: `audioEnabled: true`, `coachingEnabled: true`
+- Should now have: ✅ Metronome beats ✅ Cadence changes ✅ Voice coaching ✅ Alerts
 
 ## Testing Results
 

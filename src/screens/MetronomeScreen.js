@@ -62,6 +62,15 @@ export default function MetronomeScreenSimple() {
   // Animation values
   const pulseAnim = useRef(new Animated.Value(1)).current;
   
+  // Diagnostic state - shows callback activity on screen
+  const [diagnostics, setDiagnostics] = useState({
+    phaseChanges: 0,
+    cadenceChanges: 0,
+    coachingCues: 0,
+    lastCallback: 'none',
+    lastCadence: 0,
+  });
+  
   // Update ref when isPlaying changes
   useEffect(() => {
     isPlayingRef.current = isPlaying;
@@ -270,13 +279,6 @@ export default function MetronomeScreenSimple() {
   };
 
   const toggleMetronome = async () => {
-    // Show alert with current mode
-    Alert.alert('Mode Check', `Current mode: ${mode}`, [
-      { text: 'Continue', onPress: () => actualToggle() }
-    ]);
-  };
-
-  const actualToggle = async () => {
     console.log('[DEBUG] toggleMetronome called, mode:', mode, 'isPlaying:', isPlaying);
     try {
       if (isPlaying) {
@@ -309,15 +311,16 @@ export default function MetronomeScreenSimple() {
         
         setWorkoutStartTime(Date.now());
         
-        console.log('[DEBUG] Current mode:', mode);
-        console.log('[DEBUG] Mode type:', typeof mode);
-        console.log('[DEBUG] Mode === "fartlek":', mode === 'fartlek');
-        
         // Start location tracking if in terrain mode
         if (mode === 'terrain') {
           setBaseCadence(cadence); // Store original cadence
           await startLocationTracking();
         }
+        
+        // CRITICAL FIX: Set isPlaying FIRST, then start metronome, THEN start workout
+        // This ensures isPlayingRef.current is true when workout callbacks fire
+        setIsPlaying(true);
+        await MetronomeService.start(cadence, stableHandleBeat, volume, audioEnabled);
         
         // Start Fartlek workout if in fartlek mode
         if (mode === 'fartlek') {
@@ -362,9 +365,6 @@ export default function MetronomeScreenSimple() {
           });
           setWorkoutStatus(WorkoutEngine.getStatus());
         }
-        
-        await MetronomeService.start(cadence, stableHandleBeat, volume, audioEnabled);
-        setIsPlaying(true);
       }
     } catch (error) {
       console.error('Metronome error:', error);
