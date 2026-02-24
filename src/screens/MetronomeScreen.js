@@ -7,6 +7,7 @@ import TerrainDetector from '../services/TerrainDetector';
 import WorkoutEngine from '../services/WorkoutEngine';
 import CoachingVoiceService from '../services/CoachingVoiceService';
 import analytics from '../services/AnalyticsService';
+import PreWorkoutCheckIn from '../components/PreWorkoutCheckIn';
 
 export default function MetronomeScreenSimple() {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -41,6 +42,10 @@ export default function MetronomeScreenSimple() {
   const [workoutStatus, setWorkoutStatus] = useState({ active: false });
   const [coachingEnabled, setCoachingEnabled] = useState(true);
   const [fartlekDifficulty, setFartlekDifficulty] = useState('intermediate');
+  
+  // Pre-workout check-in state
+  const [showCheckIn, setShowCheckIn] = useState(false);
+  const [feelingModifier, setFeelingModifier] = useState(null);
   
   // Interval mode states
   const [intervalConfig, setIntervalConfig] = useState({
