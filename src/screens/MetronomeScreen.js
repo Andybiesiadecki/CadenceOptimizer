@@ -283,96 +283,109 @@ export default function MetronomeScreenSimple() {
     console.log('Location tracking stopped');
   };
 
-  const toggleMetronome = async () => {
-    console.log('[DEBUG] toggleMetronome called, mode:', mode, 'isPlaying:', isPlaying);
+  // Actually start the metronome and workout with optional feeling modifier
+  const startWorkout = async (modifier = null) => {
+    console.log('[DEBUG] startWorkout called, mode:', mode, 'modifier:', modifier?.key || 'none');
     try {
-      if (isPlaying) {
-        // Track workout stop
-        analytics.trackFeatureUsage('metronome', 'workout_stopped', {
-          mode: mode,
-          duration: Date.now() - workoutStartTime,
-          cadence: cadence
+      const cadenceOffset = modifier?.cadenceOffset || 0;
+      const adjustedCadence = cadence + cadenceOffset;
+      
+      analytics.trackFeatureUsage('metronome', 'workout_started', {
+        mode: mode,
+        cadence: adjustedCadence,
+        feeling: modifier?.key || 'skipped',
+        audioEnabled: audioEnabled,
+        coachingEnabled: coachingEnabled
+      });
+      
+      setWorkoutStartTime(Date.now());
+      if (modifier) setFeelingModifier(modifier);
+      
+      if (mode === 'terrain') {
+        setBaseCadence(adjustedCadence);
+        await startLocationTracking();
+      }
+      
+      setIsPlaying(true);
+      setCadence(adjustedCadence);
+      await MetronomeService.start(adjustedCadence, stableHandleBeat, volume, audioEnabled);
+      
+      if (mode === 'fartlek') {
+        await WorkoutEngine.startFartlek({
+          baseCadence: adjustedCadence,
+          difficulty: fartlekDifficulty,
+          duration: 1800,
+          coachingEnabled: coachingEnabled,
         });
-        
-        await MetronomeService.stop();
-        WorkoutEngine.stopWorkout();
-        setIsPlaying(false);
-        setCurrentBeat(0);
-        setWorkoutStatus({ active: false });
-        
-        // Stop location tracking if in terrain mode
-        if (mode === 'terrain') {
-          stopLocationTracking();
-        }
-      } else {
-        console.log('[DEBUG] Starting metronome, mode:', mode);
-        // Track workout start
-        analytics.trackFeatureUsage('metronome', 'workout_started', {
-          mode: mode,
-          cadence: cadence,
-          audioEnabled: audioEnabled,
-          coachingEnabled: coachingEnabled
+        setWorkoutStatus(WorkoutEngine.getStatus());
+      }
+      
+      if (mode === 'interval') {
+        const intensityMult = modifier?.intensityMultiplier || 1.0;
+        await WorkoutEngine.startInterval({
+          workDuration: intervalConfig.workDuration,
+          restDuration: intervalConfig.restDuration,
+          intervals: intervalConfig.intervals,
+          workCadence: Math.round(intervalConfig.workCadence + cadenceOffset),
+          restCadence: Math.round(intervalConfig.restCadence + cadenceOffset),
+          coachingEnabled: coachingEnabled,
         });
-        
-        setWorkoutStartTime(Date.now());
-        
-        // Start location tracking if in terrain mode
-        if (mode === 'terrain') {
-          setBaseCadence(cadence); // Store original cadence
-          await startLocationTracking();
-        }
-        
-        // CRITICAL FIX: Set isPlaying FIRST, then start metronome, THEN start workout
-        // This ensures isPlayingRef.current is true when workout callbacks fire
-        setIsPlaying(true);
-        await MetronomeService.start(cadence, stableHandleBeat, volume, audioEnabled);
-        
-        // Start Fartlek workout if in fartlek mode
-        if (mode === 'fartlek') {
-          console.log('Starting Fartlek workout with config:', {
-            baseCadence: cadence,
-            difficulty: fartlekDifficulty,
-            duration: 1800,
-            coachingEnabled: coachingEnabled,
-          });
-          await WorkoutEngine.startFartlek({
-            baseCadence: cadence,
-            difficulty: fartlekDifficulty,
-            duration: 1800, // 30 minutes
-            coachingEnabled: coachingEnabled,
-          });
-          const status = WorkoutEngine.getStatus();
-          console.log('Fartlek workout status after start:', status);
-          setWorkoutStatus(status);
-        }
-        
-        // Start Interval workout if in interval mode
-        if (mode === 'interval') {
-          await WorkoutEngine.startInterval({
-            workDuration: intervalConfig.workDuration,
-            restDuration: intervalConfig.restDuration,
-            intervals: intervalConfig.intervals,
-            workCadence: intervalConfig.workCadence,
-            restCadence: intervalConfig.restCadence,
-            coachingEnabled: coachingEnabled,
-          });
-          setWorkoutStatus(WorkoutEngine.getStatus());
-        }
-        
-        // Start Progressive workout if in progressive mode
-        if (mode === 'progressive') {
-          await WorkoutEngine.startProgressive({
-            duration: progressiveConfig.duration,
-            startCadence: progressiveConfig.startCadence,
-            endCadence: progressiveConfig.endCadence,
-            progressionType: progressiveConfig.progressionType,
-            coachingEnabled: coachingEnabled,
-          });
-          setWorkoutStatus(WorkoutEngine.getStatus());
-        }
+        setWorkoutStatus(WorkoutEngine.getStatus());
+      }
+      
+      if (mode === 'progressive') {
+        await WorkoutEngine.startProgressive({
+          duration: progressiveConfig.duration,
+          startCadence: progressiveConfig.startCadence + cadenceOffset,
+          endCadence: progressiveConfig.endCadence + cadenceOffset,
+          progressionType: progressiveConfig.progressionType,
+          coachingEnabled: coachingEnabled,
+        });
+        setWorkoutStatus(WorkoutEngine.getStatus());
       }
     } catch (error) {
       console.error('Metronome error:', error);
+    }
+  };
+
+  const handleCheckInSelect = (option) => {
+    console.log('[CHECK-IN] Selected:', option.label, option.cadenceOffset, option.intensityMultiplier);
+    setShowCheckIn(false);
+    startWorkout(option);
+  };
+
+  const handleCheckInSkip = () => {
+    console.log('[CHECK-IN] Skipped');
+    setShowCheckIn(false);
+    startWorkout(null);
+  };
+
+  const toggleMetronome = async () => {
+    console.log('[DEBUG] toggleMetronome called, mode:', mode, 'isPlaying:', isPlaying);
+    if (isPlaying) {
+      analytics.trackFeatureUsage('metronome', 'workout_stopped', {
+        mode: mode,
+        duration: Date.now() - workoutStartTime,
+        cadence: cadence
+      });
+      
+      await MetronomeService.stop();
+      WorkoutEngine.stopWorkout();
+      setIsPlaying(false);
+      setCurrentBeat(0);
+      setWorkoutStatus({ active: false });
+      setFeelingModifier(null);
+      
+      if (mode === 'terrain') {
+        stopLocationTracking();
+      }
+    } else {
+      // Show check-in for structured workouts, skip for basic/terrain
+      if (mode !== 'basic' && mode !== 'terrain') {
+        setShowCheckIn(true);
+      } else {
+        startWorkout(null);
+      }
     }
   };
 
@@ -734,7 +747,24 @@ export default function MetronomeScreenSimple() {
             ))}
           </View>
         </View>
+
+        {/* Feeling indicator during workout */}
+        {feelingModifier && isPlaying && (
+          <View style={styles.feelingIndicator}>
+            <Text style={styles.feelingIndicatorText}>
+              {feelingModifier.emoji} {feelingModifier.label}
+              {feelingModifier.cadenceOffset !== 0 && ` (${feelingModifier.cadenceOffset > 0 ? '+' : ''}${feelingModifier.cadenceOffset} SPM)`}
+            </Text>
+          </View>
+        )}
       </View>
+
+      {/* Pre-workout check-in modal */}
+      <PreWorkoutCheckIn
+        visible={showCheckIn}
+        onSelect={handleCheckInSelect}
+        onSkip={handleCheckInSkip}
+      />
     </ScrollView>
   );
 }
@@ -1324,5 +1354,19 @@ const styles = StyleSheet.create({
   },
   progressionButtonDescActive: {
     color: '#CCCCCC',
+  },
+  feelingIndicator: {
+    backgroundColor: '#F0F0F0',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 24,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+  },
+  feelingIndicatorText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
   },
 });
