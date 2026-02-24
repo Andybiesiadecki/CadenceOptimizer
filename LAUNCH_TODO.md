@@ -1,0 +1,71 @@
+# STRDR Launch To-Do List
+
+## Code Cleanup
+- [ ] Remove all debug console.log statements ([FARTLEK], race calculator logs, etc.)
+- [ ] Remove expo-dev-client / dev menu from production build
+- [ ] Remove any debug alerts (e.g., "Mode Check" alert)
+- [ ] Audit all TODO/FIXME comments in codebase
+- [ ] Review error handling — no raw error messages shown to users
+
+## Testing
+- [ ] Field test metronome on a real run (5K+ distance)
+- [ ] Field test Fartlek workout with voice coaching on a run
+- [ ] Field test race target calculator recommendations
+- [ ] Test battery drain over a 1-hour session
+- [ ] Test background audio — does metronome keep playing when screen locks?
+- [ ] Test audio interruptions (phone call, notification, other audio apps)
+- [ ] Test with Bluetooth headphones
+- [ ] Test on at least one older iOS version (iOS 16 or 17)
+- [ ] Test all permission denial flows (location, microphone, etc.)
+- [ ] Test with no network connection
+- [ ] Test app kill and relaunch mid-workout
+- [ ] Test all screens for layout issues on different screen sizes
+
+## App Store Assets
+- [ ] App icon finalized (1024x1024 for App Store)
+- [ ] Screenshots for 6.7" display (iPhone 15 Pro Max / 16 Pro Max)
+- [ ] Screenshots for 6.1" display (iPhone 15 Pro / 16 Pro)
+- [ ] Screenshots for 5.5" display (iPhone 8 Plus) — if supporting older devices
+- [ ] App preview video (optional but recommended)
+- [ ] App Store description finalized (review APP_STORE_COPY.md)
+- [ ] Keywords researched and selected (100 character limit)
+- [ ] Choose primary category (Health & Fitness)
+- [ ] Choose secondary category (Sports)
+- [ ] Age rating questionnaire completed
+
+## Legal & Privacy
+- [ ] Privacy policy hosted at a public URL
+- [ ] Review data collection — what does the app actually collect?
+- [ ] App Store privacy nutrition labels filled out accurately
+- [ ] Terms of service (optional but recommended)
+- [ ] Verify PRIVACY_POLICY.md is up to date with current app behavior
+
+## App Store Connect Setup
+- [ ] App record created in App Store Connect
+- [ ] Bundle ID registered (com.strdr.app)
+- [ ] Signing certificates and provisioning profiles set up for distribution
+- [ ] Build uploaded via Xcode or Transporter
+- [ ] App information filled out (subtitle, promotional text, support URL)
+- [ ] Contact information and demo account (if needed for review)
+- [ ] Set pricing (free, paid, or freemium)
+- [ ] Set availability (countries/regions)
+
+## Production Infrastructure
+- [ ] Crash reporting service integrated (Sentry, Bugsnag, or similar)
+- [ ] Analytics working and capturing key events
+- [ ] Check final app bundle size — aim for under 50MB
+- [ ] Verify "uses non-exempt encryption" is set to NO
+- [ ] Test the production build on device (Release config, no Metro)
+
+## Pre-Launch Marketing (Optional but Helpful)
+- [ ] Simple landing page or link-in-bio site
+- [ ] Social media presence (Instagram, Strava club, running forums)
+- [ ] Reach out to a few runner friends for TestFlight beta feedback
+- [ ] Prepare a launch day post / announcement
+- [ ] Consider Product Hunt or relevant running communities
+
+## Post-Launch Plan
+- [ ] Monitor crash reports daily for first week
+- [ ] Respond to App Store reviews promptly
+- [ ] Have a plan for the first update (bug fixes from real-world feedback)
+- [ ] Track key metrics: downloads, retention, session length
