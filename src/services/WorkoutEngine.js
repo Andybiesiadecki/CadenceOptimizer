@@ -372,94 +372,37 @@ export class WorkoutEngine {
     const cues = [];
     const cadenceChange = newCadence - lastCadence;
 
-    // Phase start cue - ALWAYS provide a cue at phase start
+    // One cue at phase start — tell the runner what's changing
     if (Math.abs(cadenceChange) > 10) {
       cues.push({
         timing: 0,
-        message: `Speed play! Pick it up to ${newCadence} steps per minute`,
+        message: `Pick it up to ${newCadence} steps per minute`,
         type: 'motivation',
         priority: 'high'
       });
     } else if (cadenceChange < -5) {
       cues.push({
         timing: 0,
-        message: `Easy does it. Settle into ${newCadence} steps per minute`,
+        message: `Easy pace. ${newCadence} steps per minute`,
         type: 'guidance',
         priority: 'medium'
       });
     } else if (Math.abs(cadenceChange) > 5) {
       cues.push({
         timing: 0,
-        message: `New cadence: ${newCadence} steps per minute`,
+        message: `${newCadence} steps per minute`,
         type: 'instruction',
         priority: 'medium'
       });
-    } else {
-      // Even if cadence doesn't change, provide a cue
-      cues.push({
-        timing: 0,
-        message: `Maintain ${newCadence} steps per minute. Stay focused.`,
-        type: 'guidance',
-        priority: 'low'
-      });
     }
+    // Skip cue entirely if cadence barely changed — less noise
 
-    // Mid-phase coaching based on intensity
-    switch (intensity) {
-      case 'hard':
-        cues.push({
-          timing: 0.3, // 30% through the phase
-          message: 'Quick light steps! You\'ve got this!',
-          type: 'motivation',
-          priority: 'medium'
-        });
-        cues.push({
-          timing: 0.7, // 70% through
-          message: 'Stay strong! Almost there!',
-          type: 'motivation',
-          priority: 'medium'
-        });
-        break;
-      case 'easy':
-        cues.push({
-          timing: 0.5,
-          message: 'Nice and relaxed. Let your body recover.',
-          type: 'guidance',
-          priority: 'low'
-        });
-        break;
-      case 'moderate':
-        cues.push({
-          timing: 0.5,
-          message: 'Smooth and steady rhythm.',
-          type: 'guidance',
-          priority: 'low'
-        });
-        break;
-      case 'base':
-        // Add cue for base intensity phases too
-        cues.push({
-          timing: 0.5,
-          message: 'Good pace. Keep it steady.',
-          type: 'guidance',
-          priority: 'low'
-        });
-        break;
-    }
-
-    // Form cues based on cadence
-    if (newCadence > 180) {
+    // One mid-phase cue only for hard intervals
+    if (intensity === 'hard') {
       cues.push({
-        timing: 0.2,
-        message: 'High cadence - focus on quick, light steps',
-        type: 'technique',
-        priority: 'medium'
-      });
-    } else if (newCadence < 160) {
-      cues.push({
-        timing: 0.2,
-        message: 'Longer strides - stay relaxed and efficient',
-        type: 'technique',
+        timing: 0.7,
+        message: 'Stay strong, almost there',
+        type: 'motivation',
         priority: 'medium'
       });
     }
@@ -485,80 +428,42 @@ export class WorkoutEngine {
       case 'warmup':
         cues.push({
           timing: 0,
-          message: `Starting warmup. Easy pace at ${cadence} steps per minute. Get your body ready for the intervals ahead.`,
+          message: `Warmup. Easy pace at ${cadence} steps per minute`,
           type: 'guidance',
           priority: 'high'
-        });
-        cues.push({
-          timing: 0.7,
-          message: 'Warmup almost complete. Get ready for your first work interval!',
-          type: 'instruction',
-          priority: 'medium'
         });
         break;
 
       case 'work':
         cues.push({
           timing: 0,
-          message: `Interval ${intervalNumber} of ${totalIntervals}! Work hard at ${cadence} steps per minute!`,
+          message: `Interval ${intervalNumber} of ${totalIntervals}. ${cadence} steps per minute`,
           type: 'motivation',
           priority: 'high'
-        });
-        cues.push({
-          timing: 0.25,
-          message: 'Stay strong! Focus on quick, light steps!',
-          type: 'motivation',
-          priority: 'medium'
-        });
-        cues.push({
-          timing: 0.5,
-          message: 'Halfway through this interval. Keep pushing!',
-          type: 'motivation',
-          priority: 'medium'
         });
         cues.push({
           timing: 0.8,
-          message: 'Final push! You\'ve got this!',
+          message: 'Almost there',
           type: 'motivation',
-          priority: 'high'
+          priority: 'medium'
         });
         break;
 
       case 'rest':
         cues.push({
           timing: 0,
-          message: `Great work! Recovery time. Easy ${cadence} steps per minute. Catch your breath.`,
+          message: `Recovery. Easy ${cadence} steps per minute`,
           type: 'guidance',
           priority: 'medium'
         });
-        cues.push({
-          timing: 0.5,
-          message: 'Stay relaxed but keep moving. Active recovery.',
-          type: 'guidance',
-          priority: 'low'
-        });
-        if (intervalNumber < totalIntervals) {
-          cues.push({
-            timing: 0.8,
-            message: `Get ready for interval ${intervalNumber + 1}!`,
-            type: 'instruction',
-            priority: 'medium'
-          });
-        }
         break;
 
       case 'cooldown':
         cues.push({
           timing: 0,
-          message: `Excellent work! Cooling down at ${cadence} steps per minute. Let your body recover.`,
+          message: `Cooldown. Nice work`,
           type: 'motivation',
           priority: 'high'
-        });
-        cues.push({
-          timing: 0.5,
-          message: 'Nice and easy. Great job completing your interval workout!',
-          type: 'motivation',
-          priority: 'medium'
         });
         break;
     }
@@ -579,68 +484,28 @@ export class WorkoutEngine {
     if (!enabled) return [];
 
     const cues = [];
-    const progress = step / totalSteps;
 
-    // Phase start cue
+    // One cue at phase start
     if (step === 1) {
       cues.push({
         timing: 0,
-        message: `Starting progressive workout. Beginning easy at ${cadence} steps per minute. We'll build up gradually.`,
+        message: `Starting at ${cadence} steps per minute. Building up gradually`,
         type: 'instruction',
+        priority: 'high'
+      });
+    } else if (step === totalSteps) {
+      cues.push({
+        timing: 0,
+        message: `Final stage. ${cadence} steps per minute. Finish strong`,
+        type: 'motivation',
         priority: 'high'
       });
     } else {
       cues.push({
         timing: 0,
-        message: `Step ${step} of ${totalSteps}. Building to ${cadence} steps per minute.`,
+        message: `Step ${step} of ${totalSteps}. ${cadence} steps per minute`,
         type: 'instruction',
         priority: 'medium'
-      });
-    }
-
-    // Progress-based coaching
-    if (progress < 0.3) {
-      cues.push({
-        timing: 0.5,
-        message: 'Still building. Stay relaxed and find your rhythm.',
-        type: 'guidance',
-        priority: 'low'
-      });
-    } else if (progress < 0.7) {
-      cues.push({
-        timing: 0.3,
-        message: 'Picking up the pace now. Feel the progression.',
-        type: 'guidance',
-        priority: 'medium'
-      });
-      cues.push({
-        timing: 0.7,
-        message: 'Good rhythm! Keep building the intensity.',
-        type: 'motivation',
-        priority: 'medium'
-      });
-    } else {
-      cues.push({
-        timing: 0.2,
-        message: 'Now we\'re working! Strong, quick steps!',
-        type: 'motivation',
-        priority: 'medium'
-      });
-      cues.push({
-        timing: 0.6,
-        message: 'Excellent pace! You\'re in the zone!',
-        type: 'motivation',
-        priority: 'medium'
-      });
-    }
-
-    // Final step
-    if (step === totalSteps) {
-      cues.push({
-        timing: 0.8,
-        message: 'Final step! Give it everything you\'ve got!',
-        type: 'motivation',
-        priority: 'high'
       });
     }
 

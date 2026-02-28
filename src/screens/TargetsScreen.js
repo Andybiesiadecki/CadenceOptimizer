@@ -122,7 +122,7 @@ export default function TargetsScreen() {
           ))}
         </View>
 
-        <Text style={styles.label}>Target Time (just type numbers)</Text>
+        <Text style={styles.label}>Target Time</Text>
         <TextInput
           style={styles.input}
           placeholder="4500 → 45:00"
