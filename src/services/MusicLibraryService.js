@@ -57,7 +57,6 @@ export class MusicLibraryService {
       await this.loadBpmCache();
 
       this.isInitialized = true;
-      console.log('MusicLibraryService initialized successfully');
     } catch (error) {
       console.error('Failed to initialize MusicLibraryService:', error);
       throw error;
@@ -68,7 +67,6 @@ export class MusicLibraryService {
    * Handle Spotify authentication state changes
    */
   handleSpotifyAuthChange(isAuthenticated, userProfile) {
-    console.log('Spotify auth state changed:', isAuthenticated);
     if (this.callbacks.onSpotifyAuthChange) {
       this.callbacks.onSpotifyAuthChange(isAuthenticated, userProfile);
     }
@@ -83,8 +81,6 @@ export class MusicLibraryService {
         await this.initialize();
       }
 
-      console.log('Loading music library...');
-      
       // Get music assets from device
       const media = await MediaLibrary.getAssetsAsync({
         mediaType: 'audio',
@@ -112,7 +108,6 @@ export class MusicLibraryService {
           lastAnalyzed: this.bpmCache.has(asset.id) ? new Date().toISOString() : null,
         }));
 
-      console.log(`Loaded ${this.musicLibrary.length} songs from music library`);
       return this.musicLibrary;
     } catch (error) {
       console.error('Failed to load music library:', error);
@@ -140,7 +135,6 @@ export class MusicLibraryService {
    */
   async analyzeBpm(track) {
     try {
-      console.log(`Analyzing BPM for: ${track.title}`);
       
       // Check if already cached
       if (this.bpmCache.has(track.id)) {
@@ -166,7 +160,6 @@ export class MusicLibraryService {
       this.bpmCache.set(track.id, estimatedBpm);
       await this.saveBpmCache();
       
-      console.log(`BPM analysis complete: ${track.title} = ${estimatedBpm} BPM`);
       return estimatedBpm;
     } catch (error) {
       console.error(`Failed to analyze BPM for ${track.title}:`, error);
@@ -207,13 +200,11 @@ export class MusicLibraryService {
    */
   async findSongsForCadence(targetCadence, tolerance = 10) {
     try {
-      console.log(`Finding songs for cadence: ${targetCadence} SPM (±${tolerance})`);
       
       let matchingSongs = [];
 
       // Search Spotify if authenticated
       if (SpotifyService.isAuthenticated) {
-        console.log('Searching Spotify for matching songs...');
         const spotifyTracks = await SpotifyService.searchTracksByBpm(targetCadence, {
           tolerance,
           limit: 30,
@@ -267,7 +258,6 @@ export class MusicLibraryService {
       // Sort by match quality (best matches first)
       matchingSongs.sort((a, b) => b.matchQuality - a.matchQuality);
       
-      console.log(`Found ${matchingSongs.length} songs matching ${targetCadence} SPM (${matchingSongs.filter(s => s.source === 'spotify').length} from Spotify, ${matchingSongs.filter(s => s.source === 'device').length} from device)`);
       return matchingSongs;
     } catch (error) {
       console.error('Failed to find songs for cadence:', error);
@@ -290,7 +280,6 @@ export class MusicLibraryService {
     try {
       const success = await SpotifyService.authenticate();
       if (success) {
-        console.log('Spotify authentication successful');
         return true;
       }
       return false;
@@ -314,13 +303,11 @@ export class MusicLibraryService {
         useSpotify = SpotifyService.isAuthenticated,
       } = options;
 
-      console.log(`Generating ${duration}-minute playlist for ${targetCadence} SPM`);
       
       let playlist;
 
       // Try Spotify first if authenticated and preferred
       if (useSpotify && SpotifyService.isAuthenticated) {
-        console.log('Generating Spotify-based playlist...');
         playlist = await SpotifyService.generateSpotifyCadencePlaylist(targetCadence, {
           duration,
           tolerance,
@@ -342,7 +329,6 @@ export class MusicLibraryService {
       }
 
       // Fallback to device library or supplement Spotify results
-      console.log('Generating device-based playlist...');
       playlist = {
         id: `cadence_${targetCadence}_${Date.now()}`,
         name: `${targetCadence} SPM Workout`,
@@ -403,7 +389,6 @@ export class MusicLibraryService {
         total + (track.duration / 1000), 0
       );
 
-      console.log(`Generated playlist: ${playlist.tracks.length} songs, ${Math.round(playlist.actualDuration / 60)} minutes`);
       
       // Save playlist
       await this.savePlaylist(playlist);
@@ -429,7 +414,6 @@ export class MusicLibraryService {
         await this.currentSound.unloadAsync();
       }
 
-      console.log(`Playing: ${track.title}`);
       
       // Load and play new track
       const { sound } = await Audio.Sound.createAsync(
@@ -471,7 +455,6 @@ export class MusicLibraryService {
    * Handle track finished
    */
   onTrackFinished() {
-    console.log('Track finished, playing next...');
     // Auto-play next track in playlist
     this.playNextTrack();
   }
@@ -505,7 +488,6 @@ export class MusicLibraryService {
       
       this.isPlaying = false;
       this.currentTrack = null;
-      console.log('Music playback stopped');
     } catch (error) {
       console.error('Failed to stop music playback:', error);
     }
@@ -520,7 +502,6 @@ export class MusicLibraryService {
       if (cached) {
         const data = JSON.parse(cached);
         this.bpmCache = new Map(Object.entries(data));
-        console.log(`Loaded ${this.bpmCache.size} cached BPM analyses`);
       }
     } catch (error) {
       console.error('Failed to load BPM cache:', error);
@@ -570,7 +551,6 @@ export class MusicLibraryService {
       }
       
       await AsyncStorage.setItem(indexKey, JSON.stringify(playlists));
-      console.log(`Saved playlist: ${playlist.name}`);
     } catch (error) {
       console.error('Failed to save playlist:', error);
     }
@@ -631,7 +611,6 @@ export class MusicLibraryService {
     try {
       await this.stop();
       await this.saveBpmCache();
-      console.log('MusicLibraryService cleanup complete');
     } catch (error) {
       console.error('Failed to cleanup MusicLibraryService:', error);
     }

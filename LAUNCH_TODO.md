@@ -1,16 +1,16 @@
 # STRDR Launch To-Do List
 
 ## Code Cleanup
-- [ ] Remove all debug console.log statements ([FARTLEK], race calculator logs, etc.)
+- [x] Remove all debug console.log statements ([FARTLEK], race calculator logs, etc.)
 - [ ] Remove expo-dev-client / dev menu from production build
-- [ ] Remove any debug alerts (e.g., "Mode Check" alert)
-- [ ] Audit all TODO/FIXME comments in codebase
-- [ ] Review error handling — no raw error messages shown to users
+- [x] Remove any debug alerts (e.g., "Mode Check" alert)
+- [x] Audit all TODO/FIXME comments in codebase
+- [x] Review error handling — no raw error messages shown to users
 
 ## Testing
-- [ ] Field test metronome on a real run (5K+ distance)
+- [x] Field test metronome on a real run (5K+ distance)
 - [ ] Field test Fartlek workout with voice coaching on a run
-- [ ] Field test race target calculator recommendations
+- [x] Field test race target calculator recommendations
 - [ ] Test battery drain over a 1-hour session
 - [ ] Test background audio — does metronome keep playing when screen locks?
 - [ ] Test audio interruptions (phone call, notification, other audio apps)
@@ -52,10 +52,10 @@
 
 ## Production Infrastructure
 - [ ] Crash reporting service integrated (Sentry, Bugsnag, or similar)
-- [ ] Analytics working and capturing key events
+- [x] Analytics working and capturing key events
 - [ ] Check final app bundle size — aim for under 50MB
-- [ ] Verify "uses non-exempt encryption" is set to NO
-- [ ] Test the production build on device (Release config, no Metro)
+- [x] Verify "uses non-exempt encryption" is set to NO
+- [x] Test the production build on device (Release config, no Metro)
 
 ## Pre-Launch Marketing (Optional but Helpful)
 - [ ] Simple landing page or link-in-bio site

@@ -35,7 +35,6 @@ export class MetronomeService {
       // Create audio objects for different sound types
       await this.loadSounds();
       this.isInitialized = true;
-      console.log('MetronomeService initialized successfully');
     } catch (error) {
       console.error('Failed to initialize MetronomeService:', error);
     }
@@ -56,7 +55,6 @@ export class MetronomeService {
         this.platform = 'web';
       } else {
         // Mobile platform - use expo-av
-        console.log('Mobile platform detected - loading expo-av sounds');
         await this.loadMobileSounds();
         this.platform = 'mobile';
       }
@@ -92,7 +90,6 @@ export class MetronomeService {
         accent: accentSound,
       };
 
-      console.log('Mobile sounds loaded successfully');
     } catch (error) {
       console.error('Failed to load mobile sounds:', error);
       // Fallback to simple approach
@@ -222,11 +219,9 @@ export class MetronomeService {
   async updateBpm(newBpm, onBeat) {
     // Don't update if BPM hasn't changed
     if (newBpm === this.bpm) {
-      console.log(`[METRONOME] BPM unchanged (${newBpm}), skipping update`);
       return;
     }
 
-    console.log(`[METRONOME] Updating BPM from ${this.bpm} to ${newBpm}`);
     this.bpm = newBpm;
     
     if (onBeat) {
@@ -299,7 +294,6 @@ export class MetronomeService {
             await sound.setPositionAsync(0);
             await sound.playAsync();
           } catch (playError) {
-            console.log('Sound play error, using fallback:', playError.message);
             // Fallback to vibration
             this.playFallbackFeedback(isAccent);
           }
@@ -321,8 +315,6 @@ export class MetronomeService {
    * Fallback feedback using vibration and console
    */
   playFallbackFeedback(isAccent) {
-    console.log(isAccent ? 'TICK (accent)' : 'tick');
-    
     // Try to use device vibration as feedback
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       navigator.vibrate(isAccent ? 100 : 50);

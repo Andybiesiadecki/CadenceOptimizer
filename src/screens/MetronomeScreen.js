@@ -67,15 +67,6 @@ export default function MetronomeScreenSimple() {
   // Animation values
   const pulseAnim = useRef(new Animated.Value(1)).current;
   
-  // Diagnostic state - shows callback activity on screen
-  const [diagnostics, setDiagnostics] = useState({
-    phaseChanges: 0,
-    cadenceChanges: 0,
-    coachingCues: 0,
-    lastCallback: 'none',
-    lastCadence: 0,
-  });
-  
   // Update ref when isPlaying changes
   useEffect(() => {
     isPlayingRef.current = isPlaying;
@@ -83,28 +74,17 @@ export default function MetronomeScreenSimple() {
 
   // Workout Engine Callbacks
   const handlePhaseChange = (phase, phaseIndex, totalPhases) => {
-    console.log(`[SCREEN] ========== handlePhaseChange called ==========`);
-    console.log(`[SCREEN] Phase ${phaseIndex + 1}/${totalPhases}:`, phase);
     setWorkoutStatus(WorkoutEngine.getStatus());
-    console.log(`[SCREEN] ========== handlePhaseChange completed ==========`);
   };
   
   const handleCadenceChange = (newCadence, reason) => {
-    console.log(`[SCREEN] ========== handleCadenceChange called ==========`);
-    console.log(`[SCREEN] Cadence changed to ${newCadence} SPM (${reason}), isPlaying: ${isPlayingRef.current}`);
     setCadence(newCadence);
     if (isPlayingRef.current) {
-      console.log(`[SCREEN] Updating metronome BPM to ${newCadence}`);
       MetronomeService.updateBpm(newCadence, stableHandleBeat);
-    } else {
-      console.log(`[SCREEN] Metronome not playing, skipping BPM update`);
     }
-    console.log(`[SCREEN] ========== handleCadenceChange completed ==========`);
   };
 
   const handleWorkoutComplete = (workout, stats, completed) => {
-    console.log(`[SCREEN] ========== handleWorkoutComplete called ==========`);
-    console.log('[SCREEN] Workout completed:', { workout: workout.name, stats, completed });
     setWorkoutStatus({ active: false });
     
     if (completed) {
@@ -114,23 +94,18 @@ export default function MetronomeScreenSimple() {
         [{ text: 'OK' }]
       );
     }
-    console.log(`[SCREEN] ========== handleWorkoutComplete completed ==========`);
   };
 
   const handleCoachingCue = (message, type) => {
-    console.log(`[SCREEN] ========== handleCoachingCue called ==========`);
-    console.log(`[SCREEN] Coaching cue (${type}):`, message);
     // Always show coaching cues when workout is active
     // Mobile - use actual voice service with proper cue format
     CoachingVoiceService.speakCoachingCue({ message, type, priority: 'normal' });
     
     // Also show visual notification for better UX
     Alert.alert('🎙️ Coach', message, [{ text: 'OK' }]);
-    console.log(`[SCREEN] ========== handleCoachingCue completed ==========`);
   };
   
   // Update callback refs
-  console.log(`[SCREEN] Updating callbacksRef.current`);
   callbacksRef.current = {
     onPhaseChange: handlePhaseChange,
     onCadenceChange: handleCadenceChange,
@@ -141,25 +116,20 @@ export default function MetronomeScreenSimple() {
   // Stable callback wrappers
   const stableCallbacks = {
     onPhaseChange: (...args) => {
-      console.log(`[SCREEN] stableCallbacks.onPhaseChange wrapper called`);
       return callbacksRef.current.onPhaseChange?.(...args);
     },
     onCadenceChange: (...args) => {
-      console.log(`[SCREEN] stableCallbacks.onCadenceChange wrapper called`);
       return callbacksRef.current.onCadenceChange?.(...args);
     },
     onWorkoutComplete: (...args) => {
-      console.log(`[SCREEN] stableCallbacks.onWorkoutComplete wrapper called`);
       return callbacksRef.current.onWorkoutComplete?.(...args);
     },
     onCoachingCue: (...args) => {
-      console.log(`[SCREEN] stableCallbacks.onCoachingCue wrapper called`);
       return callbacksRef.current.onCoachingCue?.(...args);
     },
   };
 
   useEffect(() => {
-    console.log(`[SCREEN] ========== useEffect initializing ==========`);
     // Initialize workout engine callbacks with stable wrappers
     WorkoutEngine.setCallbacks(stableCallbacks);
 
@@ -170,15 +140,12 @@ export default function MetronomeScreenSimple() {
     const statusInterval = setInterval(() => {
       const status = WorkoutEngine.getStatus();
       if (status.active) {
-        console.log(`[FARTLEK] Status update - Phase ${status.currentPhase + 1}/${status.workout?.phases?.length}, Time remaining: ${Math.round(status.phaseTimeRemaining)}s, Progress: ${Math.round(status.phaseProgress * 100)}%`);
         setWorkoutStatus(status);
       }
     }, 1000);
 
-    console.log(`[SCREEN] ========== useEffect initialization complete ==========`);
     
     return () => {
-      console.log(`[SCREEN] ========== useEffect cleanup ==========`);
       MetronomeService.cleanup();
       WorkoutEngine.stopWorkout();
       CoachingVoiceService.stopSpeaking();
@@ -208,7 +175,7 @@ export default function MetronomeScreenSimple() {
         oscillator.start(audioContext.currentTime);
         oscillator.stop(audioContext.currentTime + 0.1);
       } catch (error) {
-        console.log('Web audio not available:', error);
+        // Web audio not available
       }
     }
     
@@ -259,7 +226,6 @@ export default function MetronomeScreenSimple() {
     try {
       await LocationService.startTracking(handleLocationUpdate);
       setIsTrackingLocation(true);
-      console.log('Location tracking started for terrain mode');
     } catch (error) {
       console.error('Failed to start location tracking:', error);
       Alert.alert(
@@ -280,12 +246,10 @@ export default function MetronomeScreenSimple() {
       cadenceAdjustment: 0,
       confidence: 'low',
     });
-    console.log('Location tracking stopped');
   };
 
   // Actually start the metronome and workout with optional feeling modifier
   const startWorkout = async (modifier = null) => {
-    console.log('[DEBUG] startWorkout called, mode:', mode, 'modifier:', modifier?.key || 'none');
     try {
       const cadenceOffset = modifier?.cadenceOffset || 0;
       const adjustedCadence = cadence + cadenceOffset;
@@ -349,19 +313,16 @@ export default function MetronomeScreenSimple() {
   };
 
   const handleCheckInSelect = (option) => {
-    console.log('[CHECK-IN] Selected:', option.label, option.cadenceOffset, option.intensityMultiplier);
     setShowCheckIn(false);
     startWorkout(option);
   };
 
   const handleCheckInSkip = () => {
-    console.log('[CHECK-IN] Skipped');
     setShowCheckIn(false);
     startWorkout(null);
   };
 
   const toggleMetronome = async () => {
-    console.log('[DEBUG] toggleMetronome called, mode:', mode, 'isPlaying:', isPlaying);
     if (isPlaying) {
       analytics.trackFeatureUsage('metronome', 'workout_stopped', {
         mode: mode,

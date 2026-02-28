@@ -50,7 +50,6 @@ export class SpotifyService {
         }
       }
 
-      console.log('SpotifyService initialized:', this.isAuthenticated ? 'Authenticated' : 'Not authenticated');
     } catch (error) {
       console.error('Failed to initialize SpotifyService:', error);
     }
@@ -61,8 +60,6 @@ export class SpotifyService {
    */
   async authenticate() {
     try {
-      console.log('Starting Spotify authentication...');
-      
       const request = new AuthSession.AuthRequest({
         clientId: SPOTIFY_CONFIG.clientId,
         scopes: SPOTIFY_CONFIG.scopes,
@@ -80,7 +77,6 @@ export class SpotifyService {
         await this.exchangeCodeForTokens(code, request.codeVerifier);
         return true;
       } else {
-        console.log('Spotify authentication cancelled or failed:', result.type);
         return false;
       }
     } catch (error) {
@@ -121,8 +117,6 @@ export class SpotifyService {
         if (this.callbacks.onAuthStateChange) {
           this.callbacks.onAuthStateChange(true, this.userProfile);
         }
-
-        console.log('Spotify authentication successful');
       } else {
         throw new Error(data.error_description || 'Token exchange failed');
       }
@@ -164,7 +158,6 @@ export class SpotifyService {
         }
 
         await this.saveTokens();
-        console.log('Spotify token refreshed successfully');
       } else {
         throw new Error(data.error_description || 'Token refresh failed');
       }
@@ -182,7 +175,6 @@ export class SpotifyService {
     try {
       const response = await this.makeAuthenticatedRequest('https://api.spotify.com/v1/me');
       this.userProfile = response;
-      console.log(`Loaded Spotify profile: ${response.display_name}`);
     } catch (error) {
       console.error('Failed to load user profile:', error);
     }
@@ -410,7 +402,6 @@ export class SpotifyService {
         this.callbacks.onPlaylistCreated(playlist);
       }
 
-      console.log(`Created Spotify playlist: ${name}`);
       return playlist;
     } catch (error) {
       console.error('Failed to create playlist:', error);
@@ -435,7 +426,6 @@ export class SpotifyService {
         }
       );
 
-      console.log(`Added ${uris.length} tracks to playlist ${playlistId}`);
     } catch (error) {
       console.error('Failed to add tracks to playlist:', error);
       throw error;
@@ -454,8 +444,6 @@ export class SpotifyService {
         includeWarmup = true,
         includeCooldown = true,
       } = options;
-
-      console.log(`Generating Spotify playlist for ${targetCadence} SPM`);
 
       const playlist = {
         id: `spotify_cadence_${targetCadence}_${Date.now()}`,
@@ -527,7 +515,6 @@ export class SpotifyService {
         total + (track.duration / 1000), 0
       );
 
-      console.log(`Generated Spotify playlist: ${playlist.tracks.length} songs, ${Math.round(playlist.actualDuration / 60)} minutes`);
       return playlist;
     } catch (error) {
       console.error('Failed to generate Spotify cadence playlist:', error);
@@ -584,8 +571,6 @@ export class SpotifyService {
       if (this.callbacks.onAuthStateChange) {
         this.callbacks.onAuthStateChange(false, null);
       }
-
-      console.log('Spotify logout successful');
     } catch (error) {
       console.error('Failed to logout from Spotify:', error);
     }
@@ -615,7 +600,6 @@ export class SpotifyService {
   async cleanup() {
     try {
       await this.saveTokens();
-      console.log('SpotifyService cleanup complete');
     } catch (error) {
       console.error('Failed to cleanup SpotifyService:', error);
     }

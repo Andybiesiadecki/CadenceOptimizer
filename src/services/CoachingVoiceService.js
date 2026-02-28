@@ -34,10 +34,7 @@ export class CoachingVoiceService {
         // Try to get available voices and select the best one
         await this.selectBestVoice();
         this.isInitialized = true;
-        console.log('CoachingVoiceService initialized with expo-speech');
-        console.log('Selected voice:', this.voice || 'default');
       } else {
-        console.log('expo-speech not available, using fallback');
         this.platform = 'fallback';
         this.isInitialized = true;
       }
@@ -58,14 +55,12 @@ export class CoachingVoiceService {
       
       if (getAvailableVoicesAsync && typeof getAvailableVoicesAsync === 'function') {
         const voices = await getAvailableVoicesAsync();
-        console.log(`Found ${voices.length} available voices`);
         
         // Try to find one of our preferred voices
         for (const preferredVoice of this.preferredVoices) {
           const found = voices.find(v => v.identifier === preferredVoice);
           if (found) {
             this.voice = found.identifier;
-            console.log(`Selected preferred voice: ${this.voice}`);
             return;
           }
         }
@@ -78,13 +73,10 @@ export class CoachingVoiceService {
         
         if (enVoice) {
           this.voice = enVoice.identifier;
-          console.log(`Selected high-quality voice: ${this.voice}`);
-        } else {
-          console.log('Using default system voice');
         }
       }
     } catch (error) {
-      console.log('Could not get available voices, using default:', error.message);
+      // Could not get available voices, using default
     }
   }
 
@@ -95,13 +87,10 @@ export class CoachingVoiceService {
    */
   async speak(message, options = {}) {
     if (!this.isEnabled || !message) {
-      console.log('[FARTLEK] Speech disabled or no message');
       return;
     }
 
     await this.initialize();
-
-    console.log(`[FARTLEK] Speak called with message: "${message}"`);
 
     const speechOptions = {
       rate: options.rate || this.rate,
@@ -113,16 +102,13 @@ export class CoachingVoiceService {
 
     // Handle interruption
     if (speechOptions.interrupt && this.isSpeaking) {
-      console.log('[FARTLEK] Interrupting current speech');
       this.stopSpeaking();
     }
 
     // Add to queue or speak immediately
     if (speechOptions.priority === 'urgent' || !this.isSpeaking) {
-      console.log('[FARTLEK] Speaking immediately');
       await this.speakNow(message, speechOptions);
     } else {
-      console.log('[FARTLEK] Adding to speech queue');
       this.speechQueue.push({ message, options: speechOptions });
       this.processQueue();
     }
@@ -135,20 +121,16 @@ export class CoachingVoiceService {
    */
   async speakNow(message, options) {
     this.isSpeaking = true;
-    console.log(`[FARTLEK] speakNow called, platform: ${this.platform}`);
 
     try {
       if (this.platform === 'mobile' && speak && typeof speak === 'function') {
-        console.log('[FARTLEK] Using mobile speech');
         await this.speakMobile(message, options);
       } else {
-        // Fallback - just log the message
-        console.log(`[FARTLEK] 🗣️ Coach (fallback): ${message}`);
+        // Fallback - just skip
         this.isSpeaking = false;
       }
     } catch (error) {
       console.error('[FARTLEK] Error speaking message:', error);
-      console.log(`[FARTLEK] 🗣️ Coach (error fallback): ${message}`);
       this.isSpeaking = false;
     }
   }
@@ -166,7 +148,6 @@ export class CoachingVoiceService {
         rate: options.rate || this.rate,
         volume: options.volume || this.volume,
         onDone: () => {
-          console.log('[FARTLEK] Speech completed');
           this.isSpeaking = false;
           this.processQueue();
         },
@@ -182,17 +163,9 @@ export class CoachingVoiceService {
         speechOptions.voice = this.voice;
       }
       
-      console.log(`[FARTLEK] Calling expo-speech speak() with:`, {
-        message,
-        ...speechOptions,
-        onDone: '[Function]',
-        onError: '[Function]'
-      });
-      
       speak(message, speechOptions);
     } catch (error) {
       console.error('[FARTLEK] Error with mobile speech:', error);
-      console.log(`[FARTLEK] 🗣️ Coach (fallback): ${message}`);
       this.isSpeaking = false;
       this.processQueue();
     }
@@ -269,11 +242,8 @@ export class CoachingVoiceService {
    */
   async speakCoachingCue(cue) {
     if (!cue || !cue.message) {
-      console.log('[FARTLEK] No cue message to speak');
       return;
     }
-
-    console.log(`[FARTLEK] Speaking coaching cue: "${cue.message}" (${cue.type})`);
 
     const options = {
       interrupt: cue.priority === 'urgent',
@@ -313,7 +283,6 @@ export class CoachingVoiceService {
         options.volume = 0.9;
     }
 
-    console.log(`[FARTLEK] Voice options:`, options);
     await this.speak(cue.message, options);
   }
 

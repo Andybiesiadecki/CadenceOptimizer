@@ -206,14 +206,11 @@ export default function RunnerProfileSetup({ navigation, onComplete }) {
         version: '2.0'
       };
 
-      console.log('Saving runner profile:', profileData);
       const saveResult = await saveRunnerProfile(profileData);
       
       if (!saveResult) {
         throw new Error('Failed to save profile to storage');
       }
-      
-      console.log('Profile saved successfully');
       
       // Use web-compatible success message
       showSuccess(

@@ -664,8 +664,6 @@ export class WorkoutEngine {
       averageCompliance: 0,
     };
 
-    console.log(`Starting ${workout.type} workout:`, workout.name);
-    
     // Start first phase
     await this.startPhase(0);
   }
@@ -675,12 +673,8 @@ export class WorkoutEngine {
    * @param {number} phaseIndex - Phase index
    */
   async startPhase(phaseIndex) {
-    console.log(`[DEBUG] ========== startPhase(${phaseIndex}) called ==========`);
-    console.log(`[DEBUG] this.currentWorkout exists:`, !!this.currentWorkout);
-    console.log(`[DEBUG] this.isActive:`, this.isActive);
     
     if (!this.currentWorkout || phaseIndex >= this.currentWorkout.phases.length) {
-      console.log('[FARTLEK] All phases complete, finishing workout');
       return this.completeWorkout();
     }
 
@@ -689,88 +683,46 @@ export class WorkoutEngine {
     this.currentPhase = phaseIndex;
     this.phaseStartTime = Date.now();
 
-    console.log(`[FARTLEK] Starting phase ${phaseIndex + 1}/${this.currentWorkout.phases.length}:`, {
-      cadence: phase.cadence,
-      duration: phase.duration,
-      intensity: phase.intensity,
-      type: phase.type,
-      coachingCues: phase.coachingCues?.length || 0
-    });
-    console.log(`[DEBUG] Full phase object:`, JSON.stringify(phase, null, 2));
-
     // Apply terrain adjustment if enabled
     let adjustedCadence = phase.cadence;
     if (phase.terrainAdjustment) {
       const terrainAdjustment = this.getTerrainAdjustment();
       adjustedCadence = Math.round(phase.cadence + terrainAdjustment);
       adjustedCadence = Math.max(150, Math.min(200, adjustedCadence));
-      console.log(`[FARTLEK] Terrain adjustment: ${terrainAdjustment} SPM, adjusted cadence: ${adjustedCadence}`);
     }
 
     // Notify callbacks
-    console.log(`[DEBUG] Checking callbacks:`, {
-      onPhaseChange: !!this.callbacks.onPhaseChange,
-      onCadenceChange: !!this.callbacks.onCadenceChange,
-      onCoachingCue: !!this.callbacks.onCoachingCue,
-      onWorkoutComplete: !!this.callbacks.onWorkoutComplete
-    });
-    
     if (this.callbacks.onPhaseChange) {
-      console.log(`[FARTLEK] Calling onPhaseChange callback`);
       try {
         this.callbacks.onPhaseChange(phase, phaseIndex, this.currentWorkout.phases.length);
-        console.log(`[DEBUG] onPhaseChange callback completed successfully`);
       } catch (error) {
-        console.error(`[ERROR] onPhaseChange callback failed:`, error);
+        // Phase change callback failed
       }
-    } else {
-      console.error(`[ERROR] onPhaseChange callback is NOT SET!`);
     }
 
     // ALWAYS call onCadenceChange for first phase, then check for changes
     const previousCadence = previousPhase ? previousPhase.cadence : null;
     const shouldCallCadenceChange = phaseIndex === 0 || adjustedCadence !== previousCadence;
     
-    console.log(`[DEBUG] Cadence change decision:`, {
-      phaseIndex,
-      adjustedCadence,
-      previousCadence,
-      shouldCallCadenceChange,
-      hasCallback: !!this.callbacks.onCadenceChange
-    });
-    
     if (this.callbacks.onCadenceChange && shouldCallCadenceChange) {
-      console.log(`[FARTLEK] Calling onCadenceChange callback with cadence ${adjustedCadence} (previous: ${previousCadence})`);
       try {
         this.callbacks.onCadenceChange(adjustedCadence, phase.cadence);
-        console.log(`[DEBUG] onCadenceChange callback completed successfully`);
       } catch (error) {
-        console.error(`[ERROR] onCadenceChange callback failed:`, error);
+        // Cadence change callback failed
       }
-    } else if (!shouldCallCadenceChange) {
-      console.log(`[FARTLEK] Cadence unchanged (${adjustedCadence}), skipping onCadenceChange callback`);
-    } else {
-      console.error(`[ERROR] onCadenceChange callback is NOT SET!`);
     }
 
     // Schedule coaching cues
-    console.log(`[DEBUG] About to schedule coaching cues...`);
     this.scheduleCoachingCues(phase);
 
     // Schedule next phase
-    console.log(`[FARTLEK] Scheduling next phase in ${phase.duration} seconds`);
     setTimeout(() => {
       if (this.isActive) {
-        console.log(`[FARTLEK] Phase ${phaseIndex + 1} complete, moving to next phase`);
         this.stats.phasesCompleted++;
         this.stats.cadenceChanges++;
         this.startPhase(phaseIndex + 1);
-      } else {
-        console.log(`[DEBUG] Workout no longer active, not starting next phase`);
       }
     }, phase.duration * 1000);
-    
-    console.log(`[DEBUG] ========== startPhase(${phaseIndex}) completed ==========`);
   }
 
   /**
@@ -778,47 +730,23 @@ export class WorkoutEngine {
    * @param {Object} phase - Phase definition
    */
   scheduleCoachingCues(phase) {
-    console.log(`[DEBUG] ========== scheduleCoachingCues called ==========`);
-    console.log(`[DEBUG] phase.coachingCues exists:`, !!phase.coachingCues);
-    console.log(`[DEBUG] phase.coachingCues length:`, phase.coachingCues?.length);
-    console.log(`[DEBUG] this.callbacks.onCoachingCue exists:`, !!this.callbacks.onCoachingCue);
-    
     if (!phase.coachingCues || !this.callbacks.onCoachingCue) {
-      console.log('[FARTLEK] No coaching cues to schedule:', { 
-        hasCues: !!phase.coachingCues, 
-        hasCallback: !!this.callbacks.onCoachingCue,
-        cuesLength: phase.coachingCues?.length 
-      });
       return;
     }
 
-    console.log(`[FARTLEK] Scheduling ${phase.coachingCues.length} coaching cues for phase`);
-    console.log(`[DEBUG] Coaching cues:`, JSON.stringify(phase.coachingCues, null, 2));
-    
     phase.coachingCues.forEach((cue, index) => {
       const delay = cue.timing * phase.duration * 1000;
-      console.log(`[FARTLEK] Scheduling cue ${index + 1}/${phase.coachingCues.length}: "${cue.message}" in ${Math.round(delay/1000)}s (${cue.type})`);
       
       setTimeout(() => {
-        console.log(`[DEBUG] Timeout fired for cue ${index + 1}`);
-        console.log(`[DEBUG] this.isActive:`, this.isActive);
-        console.log(`[DEBUG] this.callbacks.onCoachingCue exists:`, !!this.callbacks.onCoachingCue);
-        
         if (this.isActive && this.callbacks.onCoachingCue) {
-          console.log(`[FARTLEK] Firing coaching cue: "${cue.message}" (${cue.type})`);
           try {
             this.callbacks.onCoachingCue(cue.message, cue.type);
-            console.log(`[DEBUG] onCoachingCue callback completed successfully`);
           } catch (error) {
-            console.error(`[ERROR] onCoachingCue callback failed:`, error);
+            // Coaching cue callback failed
           }
-        } else {
-          console.log(`[DEBUG] Skipping cue - workout not active or no callback`);
         }
       }, delay);
     });
-    
-    console.log(`[DEBUG] ========== scheduleCoachingCues completed ==========`);
   }
 
   /**
@@ -841,7 +769,6 @@ export class WorkoutEngine {
       
       return 0;
     } catch (error) {
-      console.error('Error getting terrain adjustment:', error);
       return 0;
     }
   }
@@ -879,8 +806,6 @@ export class WorkoutEngine {
     this.isActive = false;
     this.stats.totalTime = Date.now() - this.workoutStartTime;
     
-    console.log('Workout stopped. Stats:', this.stats);
-    
     if (this.callbacks.onWorkoutComplete) {
       this.callbacks.onWorkoutComplete(this.currentWorkout, this.stats, false);
     }
@@ -895,8 +820,6 @@ export class WorkoutEngine {
     this.isActive = false;
     this.stats.totalTime = Date.now() - this.workoutStartTime;
     this.stats.completed = true;
-    
-    console.log('Workout completed! Stats:', this.stats);
     
     if (this.callbacks.onWorkoutComplete) {
       this.callbacks.onWorkoutComplete(this.currentWorkout, this.stats, true);
@@ -936,21 +859,7 @@ export class WorkoutEngine {
    * @param {Object} callbacks - Callback functions
    */
   setCallbacks(callbacks) {
-    console.log(`[DEBUG] ========== setCallbacks called ==========`);
-    console.log(`[DEBUG] Callbacks being set:`, {
-      onPhaseChange: !!callbacks.onPhaseChange,
-      onCadenceChange: !!callbacks.onCadenceChange,
-      onWorkoutComplete: !!callbacks.onWorkoutComplete,
-      onCoachingCue: !!callbacks.onCoachingCue
-    });
     this.callbacks = { ...this.callbacks, ...callbacks };
-    console.log(`[DEBUG] Callbacks after merge:`, {
-      onPhaseChange: !!this.callbacks.onPhaseChange,
-      onCadenceChange: !!this.callbacks.onCadenceChange,
-      onWorkoutComplete: !!this.callbacks.onWorkoutComplete,
-      onCoachingCue: !!this.callbacks.onCoachingCue
-    });
-    console.log(`[DEBUG] ========== setCallbacks completed ==========`);
   }
 
   /**

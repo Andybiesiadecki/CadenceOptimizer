@@ -9,8 +9,6 @@ export class FitFileParser {
    */
   static async parseFitFile(base64Data) {
     try {
-      console.log('FitFileParser: Starting parse, data length:', base64Data.length);
-      
       // For now, we'll create realistic mock data based on the file
       // TODO: Implement proper FIT parsing with a React Native compatible library
       
@@ -18,8 +16,6 @@ export class FitFileParser {
       const fileSize = Math.floor(base64Data.length * 0.75); // Approximate binary size
       const estimatedDuration = Math.max(1200, Math.min(7200, fileSize / 50)); // 20min to 2hr
       const dataPoints = Math.floor(estimatedDuration); // ~1 point per second
-      
-      console.log(`FitFileParser: Estimated ${Math.round(estimatedDuration/60)}min run with ${dataPoints} data points`);
       
       // Generate realistic running data
       const records = this.generateRealisticRunData(dataPoints, estimatedDuration);

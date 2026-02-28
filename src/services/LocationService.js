@@ -22,11 +22,9 @@ export class LocationService {
       const { status } = await Location.requestForegroundPermissionsAsync();
       
       if (status !== 'granted') {
-        console.log('Location permission denied');
         return false;
       }
 
-      console.log('Location permission granted');
       return true;
     } catch (error) {
       console.error('Error requesting location permissions:', error);
@@ -40,7 +38,6 @@ export class LocationService {
    */
   async startTracking(callback) {
     if (this.isTracking) {
-      console.log('Already tracking location');
       return;
     }
 
@@ -66,7 +63,6 @@ export class LocationService {
         }
       );
 
-      console.log('Location tracking started');
     } catch (error) {
       console.error('Error starting location tracking:', error);
       this.isTracking = false;
@@ -119,7 +115,6 @@ export class LocationService {
 
     this.isTracking = false;
     this.onLocationUpdate = null;
-    console.log('Location tracking stopped');
   }
 
   /**

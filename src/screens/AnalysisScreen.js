@@ -57,7 +57,6 @@ export default function AnalysisScreen() {
     try {
       setLoading(true);
       setError(null);
-      console.log('Starting file selection...');
 
       // Track file upload attempt
       analytics.trackFeatureUsage('analysis', 'file_upload_started');
@@ -68,17 +67,13 @@ export default function AnalysisScreen() {
         copyToCacheDirectory: true,
       });
 
-      console.log('Document picker result:', result);
-
       if (result.canceled) {
-        console.log('File selection canceled');
         analytics.trackUserAction('file_upload_canceled');
         setLoading(false);
         return;
       }
 
       const file = result.assets[0];
-      console.log('Selected file:', file.name, 'Size:', file.size);
       
       // Track file selection
       analytics.trackFeatureUsage('analysis', 'file_selected', {
@@ -103,14 +98,10 @@ export default function AnalysisScreen() {
       let actualFileName = file.name;
       
       if (fileName.endsWith('.zip')) {
-        console.log('ZIP file detected, extracting FIT files...');
-        
         // Extract FIT file from ZIP using file URI (React Native compatible)
         const extractedData = await extractFitFromZip(file.uri);
         base64Data = extractedData.fitData;
         actualFileName = extractedData.fileName;
-        
-        console.log(`Successfully extracted: ${actualFileName}`);
         
         // Show info about extraction if multiple FIT files were found
         if (extractedData.totalFitFiles > 1) {
@@ -121,17 +112,12 @@ export default function AnalysisScreen() {
           );
         }
       } else {
-        console.log('Reading FIT file directly...');
         // Read FIT file directly as base64 (web-compatible)
         base64Data = await readFileAsBase64(file.uri);
       }
 
-      console.log('File read successfully, length:', base64Data.length);
-      console.log('Parsing FIT file...');
-
       // Parse the FIT file using our enhanced parser
       const parsedData = await FitFileParser.parseFitFile(base64Data);
-      console.log('FIT file parsed successfully, records:', parsedData.records.length);
       
       // Extract data
       const cadenceData = FitFileParser.extractCadenceData(parsedData);

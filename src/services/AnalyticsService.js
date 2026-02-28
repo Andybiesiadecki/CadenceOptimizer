@@ -25,7 +25,6 @@ class AnalyticsService {
     };
 
     this.events.push(event);
-    console.log('📊 Analytics:', eventName, properties);
 
     // Store locally for now (can sync to server later)
     this.storeEvent(event);
@@ -46,7 +45,7 @@ class AnalyticsService {
       
       await AsyncStorage.setItem('analytics_events', JSON.stringify(events));
     } catch (error) {
-      console.log('Analytics storage error:', error);
+      // Storage error - silently ignore
     }
   }
 
@@ -97,7 +96,6 @@ class AnalyticsService {
       const events = await AsyncStorage.getItem('analytics_events');
       return events ? JSON.parse(events) : [];
     } catch (error) {
-      console.log('Error getting analytics:', error);
       return [];
     }
   }

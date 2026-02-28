@@ -35,7 +35,7 @@ export default function TargetsScreen() {
       const savedProfile = await getRunnerProfile();
       setProfile(savedProfile);
     } catch (error) {
-      console.log('No profile found, using defaults');
+      // No profile found, using defaults
     }
   };
 
@@ -69,59 +69,28 @@ export default function TargetsScreen() {
   };
 
   const calculateTarget = () => {
-    if (!targetTime) {
-      console.log('No target time entered');
-      return; // Don't calculate if no time entered
-    }
+    if (!targetTime) return;
 
-    console.log('Calculating target for:', { selectedDistance, targetTime });
-
-    // Parse the target time to get total minutes
     const totalMinutes = parseTimeToMinutes(targetTime);
-    console.log('Parsed total minutes:', totalMinutes);
-    
-    if (totalMinutes === 0) {
-      console.log('Invalid time - totalMinutes is 0');
-      return; // Invalid time
-    }
+    if (totalMinutes === 0) return;
 
-    // Get distance in km
     const distanceKm = distanceToKm[selectedDistance];
-    console.log('Distance in km:', distanceKm);
-    
-    // Calculate pace per km (in minutes)
     const paceMinKm = totalMinutes / distanceKm;
-    console.log('Pace per km:', paceMinKm);
-    
-    // Calculate pace per mile
     const paceMinMi = paceMinKm * 1.60934;
     
-    // Get runner profile data or use defaults
-    const height = profile?.height || 170; // cm
+    const height = profile?.height || 170;
     const experience = profile?.experience || 'intermediate';
-    console.log('Using profile:', { height, experience });
     
-    // Calculate optimal cadence using the profile-aware function
     const optimalCadence = calculateOptimalCadence(paceMinKm, height, experience);
-    console.log('Optimal cadence:', optimalCadence);
-    
-    // Calculate speed in km/h for stride length calculation
     const speedKmh = paceToSpeed(paceMinKm);
-    console.log('Speed km/h:', speedKmh);
-    
-    // Calculate stride length in meters
     const strideLength = calculateStrideLength(optimalCadence, speedKmh);
-    console.log('Stride length:', strideLength);
     
-    const calculatedResult = {
+    setResult({
       optimalCadence,
       targetPaceKm: formatPace(paceMinKm),
       targetPaceMi: formatPace(paceMinMi),
       strideLength: strideLength.toFixed(2),
-    };
-    
-    console.log('Final result:', calculatedResult);
-    setResult(calculatedResult);
+    });
   };
 
   return (
