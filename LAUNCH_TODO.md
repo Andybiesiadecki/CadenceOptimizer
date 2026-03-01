@@ -34,11 +34,11 @@
 - [ ] Age rating questionnaire completed
 
 ## Legal & Privacy
-- [ ] Privacy policy hosted at a public URL
+- [x] Privacy policy hosted at a public URL (https://gist.github.com/Andybiesiadecki/a46feb6980e6c22bbd1e71723df6820b)
 - [ ] Review data collection — what does the app actually collect?
 - [ ] App Store privacy nutrition labels filled out accurately
 - [ ] Terms of service (optional but recommended)
-- [ ] Verify PRIVACY_POLICY.md is up to date with current app behavior
+- [x] Verify PRIVACY_POLICY.md is up to date with current app behavior
 
 ## App Store Connect Setup
 - [ ] App record created in App Store Connect

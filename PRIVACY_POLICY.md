@@ -1,171 +1,72 @@
-# Privacy Policy - Cadence Optimizer
+# Privacy Policy — STRDR
 
-**Last Updated: [Date]**
+**Last Updated: February 28, 2026**
 
-## Introduction
+## Overview
 
-Cadence Optimizer ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and safeguard your information when you use our mobile application.
+STRDR is a running cadence optimizer. Your data stays on your device. We don't run servers, we don't collect your data, and we don't sell anything to anyone.
 
-## Information We Collect
+## What Data the App Uses
 
-### Information You Provide
-- **Runner Profile Data**: Age, height, weight, running experience, goals, and preferences
-- **FIT Files**: Running data files you upload for analysis
-- **Settings and Preferences**: App configuration and user preferences
+### Data You Enter
+- **Runner Profile**: Age, height, weight, experience level, and running goals. Used to calculate personalized cadence and stride recommendations.
+- **Workout Preferences**: Training mode selections, target cadence, and race goal times.
 
-### Information Automatically Collected
-- **Location Data**: GPS coordinates for terrain detection (only when app is active)
-- **Device Information**: Device type, operating system, app version
-- **Usage Analytics**: App usage patterns and feature utilization (anonymized)
+### Data Collected During Use
+- **GPS Location**: Used for terrain detection (hill-based cadence adjustments) when you run in Terrain mode. Location is processed on-device in real time and is not stored, transmitted, or logged.
+- **FIT Files**: If you import a FIT file from a GPS watch (Garmin, Polar, Suunto, etc.), it is parsed and analyzed entirely on your device. The file is never uploaded anywhere.
 
-## How We Use Your Information
+### Data NOT Collected
+- We do not collect analytics or usage data.
+- We do not use crash reporting services.
+- We do not track you across apps or websites.
+- We do not collect device identifiers, IP addresses, or advertising IDs.
+- There are no accounts, logins, or cloud syncing.
 
-### Primary Uses
-- **Performance Analysis**: Process FIT files to provide running insights
-- **Terrain Detection**: Use GPS data for real-time cadence adjustments
-- **Personalization**: Customize recommendations based on your profile
-- **App Functionality**: Enable core features like metronome and coaching
+## Data Storage
 
-### Secondary Uses
-- **App Improvement**: Analyze usage patterns to enhance features
-- **Technical Support**: Diagnose and resolve technical issues
-- **Communication**: Send important app updates and notifications
+All data is stored locally on your device using AsyncStorage (the standard local storage for React Native apps). There is no server, no database, and no cloud backup.
 
-## Data Storage and Security
-
-### Local Storage
-- **All personal data is stored locally** on your device
-- **FIT files are processed locally** and never uploaded to our servers
-- **Runner profiles are encrypted** and stored securely on your device
-
-### Security Measures
-- **Encryption**: All sensitive data is encrypted at rest
-- **Access Control**: Data is only accessible by the app
-- **No Cloud Storage**: Personal data is not stored on external servers
+If you delete the app, all data is deleted with it.
 
 ## Data Sharing
 
-### We Do Not Share
-- **Personal Information**: Never shared with third parties
-- **FIT File Data**: Remains private and local to your device
-- **Location Data**: Not shared or transmitted to external services
-- **Runner Profiles**: Kept confidential and secure
-
-### Limited Sharing
-- **Anonymized Analytics**: Aggregated, non-personal usage statistics
-- **Crash Reports**: Technical data to improve app stability (no personal info)
+We do not share data with anyone. There are no third-party SDKs, analytics services, ad networks, or tracking tools in the app.
 
 ## Third-Party Services
 
-### Spotify Integration (Optional)
-- **Purpose**: Music streaming and BPM-based song recommendations
-- **Data Shared**: Only music preferences and playlist data
-- **Control**: You can disconnect Spotify at any time
-- **Spotify's Privacy Policy**: Applies to data shared with Spotify
-
-### Analytics Services
-- **Purpose**: Understand app usage and improve performance
-- **Data Collected**: Anonymized usage patterns and crash reports
-- **No Personal Data**: Analytics do not include personal information
-
-## Your Rights and Choices
-
-### Data Control
-- **Access**: View all data stored by the app in Settings
-- **Deletion**: Delete your profile and data at any time
-- **Export**: Export your data in standard formats
-- **Correction**: Update or correct your profile information
-
-### Location Services
-- **Optional**: GPS features can be disabled in app settings
-- **Granular Control**: Choose when location is accessed
-- **System Settings**: Control location access through device settings
-
-### Analytics Opt-Out
-- **Choice**: Disable analytics in app settings
-- **No Impact**: App functionality remains unchanged
-- **Respect**: Your choice is honored immediately
+STRDR v1.0 does not communicate with any external services. There are no network requests made by the app.
 
 ## Children's Privacy
 
-- **Age Requirement**: App is suitable for ages 4+
-- **Parental Guidance**: Recommended for children under 13
-- **No Targeted Collection**: We do not knowingly collect data from children under 13
-- **Parental Rights**: Parents can request deletion of child's data
+STRDR does not collect personal information from anyone, including children. The app is rated 4+ and is safe for all ages.
 
-## Data Retention
+## Your Rights
 
-### Automatic Deletion
-- **Temporary Data**: Cleared when app is closed
-- **Cache Data**: Automatically cleared after 30 days
-- **Log Files**: Deleted after 7 days
+Since all data lives on your device:
+- **Delete it** by deleting the app or clearing app data in iOS Settings.
+- **View it** in the Runner Profile and Settings screens within the app.
+- There is nothing stored on our end to request, export, or delete.
 
-### User-Controlled Retention
-- **Profile Data**: Retained until you delete it
-- **FIT File Analysis**: Stored locally until manually deleted
-- **Settings**: Preserved until app is uninstalled
+## Permissions
 
-## International Users
+STRDR may request the following iOS permissions:
+- **Location (When In Use)**: For GPS-based terrain detection during runs. You can deny this and still use all non-terrain features.
+- **Audio**: For metronome playback and voice coaching.
+- **Motion**: For cadence detection via device sensors.
 
-### Data Processing
-- **Local Processing**: All data processed on your device
-- **No International Transfers**: Personal data stays on your device
-- **Compliance**: Adheres to GDPR, CCPA, and other privacy regulations
+All permissions are optional. The core metronome works without any of them.
 
-## Changes to Privacy Policy
+## Changes to This Policy
 
-### Notification
-- **App Updates**: Privacy policy changes communicated through app updates
-- **Significant Changes**: Email notification if you've provided an email
-- **Continued Use**: Using the app after changes constitutes acceptance
+If we update this policy, the updated version will be available at the same URL. We won't notify you individually because we don't have your contact info (and that's the point).
 
-### Version Control
-- **Date Tracking**: All changes are dated and versioned
-- **Archive**: Previous versions available upon request
+## Contact
 
-## Contact Information
+If you have questions about this privacy policy or the app:
 
-### Privacy Questions
-- **Email**: privacy@cadenceoptimizer.com
-- **Response Time**: Within 48 hours
-- **Support**: Available in multiple languages
-
-### Data Requests
-- **Access Requests**: Request copy of your data
-- **Deletion Requests**: Request complete data deletion
-- **Correction Requests**: Update incorrect information
-
-## Legal Compliance
-
-### Regulations
-- **GDPR**: European Union General Data Protection Regulation
-- **CCPA**: California Consumer Privacy Act
-- **PIPEDA**: Personal Information Protection and Electronic Documents Act (Canada)
-- **Local Laws**: Compliance with applicable local privacy laws
-
-### Law Enforcement
-- **Limited Cooperation**: Only when legally required
-- **User Notification**: We will notify users when legally permitted
-- **Data Minimization**: Only provide minimum required information
-
-## Technical Details
-
-### Encryption
-- **AES-256**: Industry-standard encryption for stored data
-- **TLS 1.3**: Secure transmission for any network communications
-- **Key Management**: Encryption keys stored securely on device
-
-### Data Formats
-- **Standard Formats**: Data stored in open, accessible formats
-- **Portability**: Easy to export and transfer data
-- **Compatibility**: Works with industry-standard fitness data formats
+**Email**: [your-email@example.com]
 
 ---
 
-**This privacy policy reflects our commitment to protecting your privacy while providing a powerful running analysis tool. Your data stays on your device, under your control.**
-
-For questions about this privacy policy, contact us at privacy@cadenceoptimizer.com
-
----
-
-*This privacy policy template should be reviewed by legal counsel before publication.*
+*This policy is effective as of February 28, 2026.*

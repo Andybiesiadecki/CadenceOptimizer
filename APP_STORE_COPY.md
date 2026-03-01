@@ -71,4 +71,4 @@ Welcome to STRDR! Your cadence and speed optimizer for smarter running.
 (needed before submission — can be a simple page or GitHub repo)
 
 ## Privacy Policy URL
-(needed before submission — host PRIVACY_POLICY.md content somewhere)
+https://gist.github.com/Andybiesiadecki/a46feb6980e6c22bbd1e71723df6820b
