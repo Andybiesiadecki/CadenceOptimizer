@@ -1,143 +1,67 @@
-# Cadence Optimizer
+# STRDR
 
-An intelligent running coach that provides personalized cadence recommendations based on FIT file analysis and real-time terrain detection.
+A cadence and speed optimizer for runners. Set your target, run to the beat, get faster.
 
-## Features
+Built with React Native and Expo. iOS first.
 
-- **FIT File Analysis**: Parse Garmin .FIT files for personalized recommendations
-- **Advanced Metronome**: Multiple modes including terrain-adaptive coaching
-- **Race Target Calculator**: Optimize cadence for specific race goals
-- **Terrain Detection**: Real-time GPS-based cadence adjustments
+## What It Does
 
-## Setup
+STRDR plays an audio metronome at your target cadence and guides you through structured workouts with voice coaching. Everything is personalized based on your runner profile — height, weight, experience, and goals.
 
-### Prerequisites
+### Training Modes
+- **Basic** — steady metronome at your target cadence
+- **Terrain** — GPS-adaptive cadence that adjusts for hills in real time
+- **Fartlek** — randomized speed play with coached hard/easy intervals
+- **Interval** — structured work/rest cycles with voice cues
+- **Progressive** — gradual cadence build over the course of a run
 
-1. **Install Node.js** (version 16 or higher)
-   - Download from [nodejs.org](https://nodejs.org/)
-   - Verify installation: `node --version`
+### Pre-Workout Check-In
+Before structured workouts, the app asks how you're feeling. It adjusts cadence targets and intensity based on your answer — so a recovery day actually feels like one.
 
-2. **Install Expo CLI**
-   ```bash
-   npm install -g @expo/cli
-   ```
+### Race Target Calculator
+Pick a distance, enter your goal time, and get personalized cadence, pace, and stride length recommendations.
 
-3. **Install Expo Go app** on your phone
-   - iOS: [App Store](https://apps.apple.com/app/expo-go/id982107779)
-   - Android: [Google Play](https://play.google.com/store/apps/details?id=host.exp.exponent)
+### FIT File Analysis
+Import FIT files from Garmin, Wahoo, Polar, Suunto, or any GPS watch. Get cadence zone breakdowns, pace analysis, heart rate data, and elevation profiles.
 
-### Running the App
+### Voice Coaching
+Hands-free coaching cues during structured workouts — phase changes, pacing reminders, and motivation. Plays through headphones even when the screen is locked.
 
-1. **Install dependencies**
-   ```bash
-   cd CadenceOptimizer
-   npm install
-   ```
+## Privacy
 
-2. **Start the development server**
-   ```bash
-   npm start
-   ```
+All data stays on your device. No accounts, no servers, no tracking. Full policy: [Privacy Policy](https://gist.github.com/Andybiesiadecki/a46feb6980e6c22bbd1e71723df6820b)
 
-3. **Run on your device**
-   - Scan the QR code with Expo Go app
-   - Or press 'i' for iOS simulator, 'a' for Android emulator
+## Tech Stack
+
+- React Native + Expo
+- Expo AV (audio)
+- Expo Location (GPS/terrain)
+- Expo Speech (voice coaching)
+- AsyncStorage (local persistence)
+- FIT file parsing (custom implementation)
+
+## Running Locally
+
+```bash
+npm install
+npx expo start
+```
+
+For a release build on a physical iPhone:
+```bash
+npx expo run:ios --device --configuration Release
+```
 
 ## Project Structure
 
 ```
-CadenceOptimizer/
-├── App.js                 # Main app component with navigation
-├── src/
-│   ├── screens/          # Main app screens
-│   │   ├── HomeScreen.js
-│   │   ├── AnalysisScreen.js
-│   │   ├── MetronomeScreen.js
-│   │   └── TargetsScreen.js
-│   ├── services/         # Core logic (coming soon)
-│   ├── components/       # Reusable components (coming soon)
-│   └── utils/           # Helper functions (coming soon)
-├── app.json             # Expo configuration
-└── package.json         # Dependencies
+src/
+├── screens/           # MetronomeScreen, TargetsScreen, AnalysisScreen, etc.
+├── services/          # WorkoutEngine, CoachingVoiceService, FitFileParser, etc.
+├── components/        # PreWorkoutCheckIn, AnalyticsDashboard, charts/
+└── utils/             # Helpers and constants
 ```
 
-## Next Steps
+## Status
 
-- [x] Implement FIT file parsing
-- [x] Build cadence calculation algorithms
-- [x] Add audio metronome functionality
-- [ ] Integrate GPS location services
-- [ ] Add data persistence
-- [ ] Implement terrain detection
-
-## FIT File Support
-
-The app now supports comprehensive FIT file analysis with the following features:
-
-### Supported Data Sources
-- **Garmin devices** (native FIT format)
-- **Wahoo, Polar, Suunto, Coros** watches
-- **Strava exports** (download as FIT)
-- **TrainingPeaks** data
-- **Any device** that exports FIT files
-
-### Analysis Features
-- **Cadence Statistics**: Average, min/max, variability analysis
-- **Cadence Zones**: Time spent in optimal (160-180 SPM) vs sub-optimal ranges
-- **Terrain Impact**: Cadence changes on uphill, downhill, and flat terrain
-- **Personalized Recommendations**: Specific advice based on your running patterns
-- **Run Summary**: Distance, duration, pace, heart rate analysis
-
-### How to Use
-1. Go to the Analysis tab
-2. Tap "Select FIT File"
-3. Choose your .FIT file from Garmin Connect, Strava, etc.
-4. View detailed cadence analysis and recommendations
-
-## Cadence Algorithms
-
-The app now includes intelligent cadence optimization algorithms:
-
-### Smart Recommendations
-- **Pace-Based Cadence**: Optimal cadence calculated for target race pace
-- **Experience Level Adjustments**: Recommendations adapted for beginner to elite runners
-- **Distance Optimization**: Different cadence strategies for 5K vs marathon
-- **Terrain Adaptation**: Real-time adjustments for uphill/downhill/flat terrain
-
-### Advanced Analysis
-- **Efficiency Scoring**: How well your cadence matches your pace
-- **Pattern Recognition**: Identifies fatigue, terrain adaptation issues
-- **Progression Planning**: Week-by-week cadence improvement plans
-- **Confidence Scoring**: Algorithm confidence in recommendations
-
-### Target Calculator
-- Enter race goals and get personalized cadence targets
-- Advanced calculator with experience level, terrain, and distance factors
-- Training progression plans to reach optimal cadence
-- Real-time terrain adjustment recommendations
-
-## Audio Metronome
-
-The app now includes a full-featured audio metronome with visual indicators:
-
-### Audio Features
-- **Multiple Sound Types**: Click, beep, tick, and wood sounds
-- **Volume Control**: Adjustable volume with visual slider
-- **Accent Beats**: Every 4th beat is accented for running rhythm (left/right foot)
-- **Cross-Platform Audio**: Web Audio API for browsers, Expo AV for mobile
-
-### Visual Beat Indicators
-- **Animated Pulse Circle**: Large circle that pulses and changes color with each beat
-- **Rhythm Pattern Display**: 4-dot pattern showing current beat position with L/R foot indicators
-- **Beat Visualization Waveform**: Animated bar chart showing beat pattern
-- **Real-time Status**: Beat counter, BPM, interval timing, and audio status
-
-### Smart Controls
-- **Cadence Adjustment**: -5/+5 SPM buttons (disabled while playing)
-- **Quick Settings**: Preset cadences (160, 170, 180, 190 SPM)
-- **Audio Toggle**: Enable/disable audio while keeping visual indicators
-- **Mode Selection**: Basic, interval, progressive, and terrain-adaptive modes
-
-## Development Notes
-
-This is built with React Native and Expo for cross-platform mobile development. The app requires location permissions for terrain detection and audio permissions for metronome functionality.
+v1.0 — preparing for App Store submission. Bundle ID: `com.strdr.app`
