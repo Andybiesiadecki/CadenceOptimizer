@@ -8,7 +8,8 @@
     "ios": "expo run:ios",
     "ios:device": "expo run:ios --device",
     "dev-build": "./scripts/dev-build.sh",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",
@@ -43,6 +44,8 @@
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
+    "eslint": "^9.39.5",
+    "eslint-config-expo": "~10.0.0",
     "sharp": "^0.34.5"
   },
   "private": true
