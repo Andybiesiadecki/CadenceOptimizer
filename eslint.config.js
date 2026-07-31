@@ -15,4 +15,22 @@ module.exports = defineConfig([
       'react/no-unescaped-entities': 'off',
     },
   },
+  {
+    // Jest test files: declare the test-runner globals so no-undef doesn't
+    // flag describe/test/expect/jest/etc.
+    files: ['**/__tests__/**/*.js', '**/*.test.js'],
+    languageOptions: {
+      globals: {
+        jest: 'readonly',
+        describe: 'readonly',
+        test: 'readonly',
+        it: 'readonly',
+        expect: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
+      },
+    },
+  },
 ]);
