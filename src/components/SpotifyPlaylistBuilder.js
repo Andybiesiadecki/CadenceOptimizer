@@ -21,7 +21,10 @@ function formatDuration(ms) {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-export default function SpotifyPlaylistBuilder({ visible, onClose, targetCadence = 170 }) {
+// onNotAllowlisted: called when Spotify rejects the user because the app is in
+// dev mode and they're not on the allowlist (App Store users until extended
+// quota lands). Parent hides the Spotify entry point for the session.
+export default function SpotifyPlaylistBuilder({ visible, onClose, targetCadence = 170, onNotAllowlisted }) {
   const [isConnected, setIsConnected] = useState(false);
   const [loading, setLoading] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
@@ -38,6 +41,10 @@ export default function SpotifyPlaylistBuilder({ visible, onClose, targetCadence
 
   const checkConnection = async () => {
     await SpotifyService.initialize();
+    if (SpotifyService.isNotAllowlisted()) {
+      onNotAllowlisted?.();
+      return;
+    }
     const connected = SpotifyService.isAuthenticated();
     setIsConnected(connected);
     if (connected && SpotifyService.userProfile) {
@@ -49,11 +56,19 @@ export default function SpotifyPlaylistBuilder({ visible, onClose, targetCadence
     setLoading(true);
     try {
       const success = await SpotifyService.authenticate();
+      if (SpotifyService.isNotAllowlisted()) {
+        onNotAllowlisted?.();
+        return;
+      }
       setIsConnected(success);
       if (success && SpotifyService.userProfile) {
         setUserName(SpotifyService.userProfile.display_name || '');
       }
     } catch (error) {
+      if (SpotifyService.isNotAllowlisted()) {
+        onNotAllowlisted?.();
+        return;
+      }
       Alert.alert('Connection Failed', 'Could not connect to Spotify. Try again.');
     } finally {
       setLoading(false);
@@ -65,8 +80,18 @@ export default function SpotifyPlaylistBuilder({ visible, onClose, targetCadence
     setHasSearched(true);
     try {
       const results = await SpotifyService.searchByBPM(targetCadence, 3, 30);
+      // gatherUserTracks swallows per-request errors, so a dev-mode rejection
+      // shows up here as an empty result set with the flag raised.
+      if (SpotifyService.isNotAllowlisted()) {
+        onNotAllowlisted?.();
+        return;
+      }
       setSearchResults(results);
     } catch (error) {
+      if (SpotifyService.isNotAllowlisted()) {
+        onNotAllowlisted?.();
+        return;
+      }
       Alert.alert('Search Error', 'Could not search Spotify. Try again.');
     } finally {
       setLoading(false);

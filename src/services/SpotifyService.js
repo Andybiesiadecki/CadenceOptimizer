@@ -19,16 +19,36 @@ function encodeFormData(obj) {
     .join('&');
 }
 
+// Spotify apps in DEV MODE (no extended quota) reject any user not on the
+// app's Developer-Dashboard allowlist: OAuth succeeds, then the first Web API
+// call returns 403 "User not registered in the Developer Dashboard". Detect
+// that specific rejection so the UI can fail gracefully instead of dead-ending.
+// `body` may be Spotify's JSON error shape ({ error: { status, message } }) or
+// a plain-text body — both occur in the wild.
+export function isDevModeRejection(status, body) {
+  if (status !== 403) return false;
+  const message = typeof body === 'string' ? body : body?.error?.message || '';
+  return /not registered in the developer dashboard/i.test(message);
+}
+
 class SpotifyService {
   constructor() {
     this.accessToken = null;
     this.refreshToken = null;
     this.tokenExpiry = null;
     this.userProfile = null;
+    // True once we've seen Spotify's dev-mode allowlist rejection this
+    // session. Deliberately NOT persisted and NOT cleared by logout(): the
+    // rejection is about the app's quota mode, not the auth session.
+    this.notAllowlisted = false;
   }
 
   isEnabled() {
     return SPOTIFY_CONFIG.enabled === true;
+  }
+
+  isNotAllowlisted() {
+    return this.notAllowlisted === true;
   }
 
   isAuthenticated() {
@@ -70,6 +90,13 @@ class SpotifyService {
       if (result.type === 'success') {
         await this.exchangeCode(result.params.code, request.codeVerifier);
         await this.loadProfile();
+        // First API call after OAuth is where dev-mode rejection surfaces
+        // (loadProfile swallows the throw, but the flag is set). Drop the
+        // useless tokens so a later launch doesn't look connected-but-broken.
+        if (this.notAllowlisted) {
+          await this.logout();
+          return false;
+        }
         return true;
       }
       return false;
@@ -145,6 +172,33 @@ class SpotifyService {
     if (response.status === 401) {
       await this.refreshAccessToken();
       return this.apiRequest(url, options);
+    }
+
+    if (response.status === 403) {
+      // Body may be JSON ({ error: { status, message } }) or plain text.
+      let body = null;
+      try {
+        const text = await response.text();
+        try {
+          body = JSON.parse(text);
+        } catch (e) {
+          body = text;
+        }
+      } catch (e) {
+        // unreadable body; fall through with null
+      }
+
+      if (isDevModeRejection(response.status, body)) {
+        this.notAllowlisted = true;
+        const err = new Error('Spotify app is in dev mode; user is not allowlisted');
+        err.code = 'spotify_not_allowlisted';
+        throw err;
+      }
+
+      if (typeof body === 'string' || body === null) {
+        throw new Error(`Spotify API error 403: ${body || 'Forbidden'}`);
+      }
+      return body;
     }
 
     return response.json();
