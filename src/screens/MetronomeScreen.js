@@ -65,6 +65,10 @@ export default function MetronomeScreenSimple() {
   const [workoutSummary, setWorkoutSummary] = useState(null);
   const [profileUnits, setProfileUnits] = useState('metric');
   const [showMusic, setShowMusic] = useState(false);
+  // Spotify app is in dev mode: non-allowlisted users get a 403 after OAuth.
+  // When that happens we hide the entry point for the session (session-only
+  // by design — allowlist status can change server-side at any time).
+  const [spotifyUnavailable, setSpotifyUnavailable] = useState(false);
   
   // Interval mode states
   const [intervalConfig, setIntervalConfig] = useState({
@@ -595,18 +599,26 @@ export default function MetronomeScreenSimple() {
         </View>
 
         {/* Spotify Music */}
-        <TouchableOpacity
-          style={styles.musicButton}
-          onPress={() => setShowMusic(true)}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.musicButtonIcon}>🎵</Text>
-          <View style={styles.musicButtonContent}>
-            <Text style={styles.musicButtonText}>FIND MUSIC AT {cadence} BPM</Text>
-            <Text style={styles.musicButtonDesc}>Build a Spotify playlist for your run</Text>
+        {spotifyUnavailable ? (
+          <View style={styles.musicUnavailable}>
+            <Text style={styles.musicUnavailableText}>
+              Spotify matching is in limited beta — coming to everyone soon.
+            </Text>
           </View>
-          <Text style={styles.musicButtonArrow}>→</Text>
-        </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.musicButton}
+            onPress={() => setShowMusic(true)}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.musicButtonIcon}>🎵</Text>
+            <View style={styles.musicButtonContent}>
+              <Text style={styles.musicButtonText}>FIND MUSIC AT {cadence} BPM</Text>
+              <Text style={styles.musicButtonDesc}>Build a Spotify playlist for your run</Text>
+            </View>
+            <Text style={styles.musicButtonArrow}>→</Text>
+          </TouchableOpacity>
+        )}
 
         {/* Mode-Specific Configuration */}
         {mode === 'fartlek' && (
@@ -838,6 +850,10 @@ export default function MetronomeScreenSimple() {
         visible={showMusic}
         onClose={() => setShowMusic(false)}
         targetCadence={cadence}
+        onNotAllowlisted={() => {
+          setSpotifyUnavailable(true);
+          setShowMusic(false);
+        }}
       />
     </ScrollView>
     </SafeAreaView>
@@ -1382,6 +1398,19 @@ const styles = StyleSheet.create({
     fontFamily: 'Archivo_700Bold',
     fontSize: 20,
     color: '#0A0A0A',
+  },
+  musicUnavailable: {
+    backgroundColor: '#FAFAFA',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+  },
+  musicUnavailableText: {
+    fontSize: 13,
+    color: '#666',
+    textAlign: 'center',
   },
   terrainToggle: {
     backgroundColor: '#FFFFFF',
