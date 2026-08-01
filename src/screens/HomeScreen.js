@@ -4,14 +4,12 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native';
 import { getRunnerProfile } from '../utils/storage';
 import analytics from '../services/AnalyticsService';
-import FeedbackModal from '../components/FeedbackModal';
 
 const { width } = Dimensions.get('window');
 
 export default function HomeScreen({ navigation }) {
   const [hasProfile, setHasProfile] = useState(false);
   const [profile, setProfile] = useState(null);
-  const [showFeedback, setShowFeedback] = useState(false);
 
   const insets = useSafeAreaInsets();
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -190,20 +188,6 @@ export default function HomeScreen({ navigation }) {
 
         {/* Pinned compact wordmark that tucks in as the large logo collapses */}
         <CompactBanner />
-
-        {/* Feedback button still available */}
-        <TouchableOpacity
-          style={styles.feedbackButton}
-          onPress={() => setShowFeedback(true)}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.feedbackButtonText}>💬</Text>
-        </TouchableOpacity>
-
-        <FeedbackModal
-          visible={showFeedback}
-          onClose={() => setShowFeedback(false)}
-        />
       </SafeAreaView>
     ) : (
     // MAIN HOME: Profile exists — show workout-focused home
@@ -310,21 +294,6 @@ export default function HomeScreen({ navigation }) {
 
     {/* Pinned compact wordmark that tucks in as the large logo collapses */}
     <CompactBanner />
-
-    {/* Floating Feedback Button — sibling of ScrollView so it stays fixed over the viewport */}
-    <TouchableOpacity 
-      style={styles.feedbackButton}
-      onPress={() => setShowFeedback(true)}
-      activeOpacity={0.7}
-    >
-      <Text style={styles.feedbackButtonText}>💬</Text>
-    </TouchableOpacity>
-    
-    {/* Feedback Modal */}
-    <FeedbackModal
-      visible={showFeedback}
-      onClose={() => setShowFeedback(false)}
-    />
     </SafeAreaView>
     )}
     </>
@@ -562,22 +531,6 @@ const styles = StyleSheet.create({
     height: 32,
   },
   
-  // Feedback Button
-  feedbackButton: {
-    position: 'absolute',
-    bottom: 100,
-    right: 20,
-    width: 50,
-    height: 50,
-    backgroundColor: '#0A0A0A',
-    borderRadius: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  feedbackButtonText: {
-    fontSize: 20,
-  },
-
   // Onboarding Styles
   onboardingContent: {
     paddingBottom: 60,
