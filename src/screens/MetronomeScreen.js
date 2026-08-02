@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Slider from '@react-native-community/slider';
 import MetronomeService from '../services/MetronomeService';
 import LocationService from '../services/LocationService';
 import TerrainDetector from '../services/TerrainDetector';
@@ -12,15 +11,14 @@ import PreWorkoutCheckIn from '../components/PreWorkoutCheckIn';
 import RouteTracker from '../services/RouteTracker';
 import PostWorkoutSummary from '../components/PostWorkoutSummary';
 import SpotifyPlaylistBuilder from '../components/SpotifyPlaylistBuilder';
-import { getRunnerProfile } from '../utils/storage';
-import { saveWorkoutToHistory } from '../utils/storage';
+import { getRunnerProfile, saveWorkoutToHistory } from '../utils/storage';
 
 export default function MetronomeScreenSimple() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [cadence, setCadence] = useState(170);
   const [currentBeat, setCurrentBeat] = useState(0);
-  const [volume, setVolume] = useState(0.8);
-  const [audioEnabled, setAudioEnabled] = useState(true);
+  const [volume] = useState(0.8);
+  const [audioEnabled] = useState(true);
   const [workoutStartTime, setWorkoutStartTime] = useState(null);
   const [mode, setMode] = useState('none'); // none, fartlek, interval
   
@@ -36,7 +34,7 @@ export default function MetronomeScreenSimple() {
   
   // Terrain tracking state (available in all modes)
   const [terrainEnabled, setTerrainEnabled] = useState(false);
-  const [isTrackingLocation, setIsTrackingLocation] = useState(false);
+  const [, setIsTrackingLocation] = useState(false);
   const [terrainData, setTerrainData] = useState({
     terrain: 'flat',
     grade: 0,
@@ -202,6 +200,10 @@ export default function MetronomeScreenSimple() {
       clearInterval(statusInterval);
       if (cueBannerTimer.current) clearTimeout(cueBannerTimer.current);
     };
+    // Deliberate mount-once effect: stableCallbacks is a fresh object each
+    // render (its stability comes from callbacksRef inside); depending on it
+    // would re-init audio/engine/voice every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleBeat = (beatNumber) => {
@@ -224,7 +226,7 @@ export default function MetronomeScreenSimple() {
         
         oscillator.start(audioContext.currentTime);
         oscillator.stop(audioContext.currentTime + 0.1);
-      } catch (error) {
+      } catch (_error) {
         // Web audio not available
       }
     }
@@ -316,7 +318,6 @@ export default function MetronomeScreenSimple() {
     };
 
     const splitPace = formatPace(split.splitPace);
-    const overallPace = formatPace(split.overallPace);
 
     // Build the message
     let message = `${unitLabel} ${split.splitNumber} complete. `;
@@ -382,7 +383,6 @@ export default function MetronomeScreenSimple() {
       }
       
       if (mode === 'interval') {
-        const intensityMult = modifier?.intensityMultiplier || 1.0;
         await WorkoutEngine.startInterval({
           workDuration: intervalConfig.workDuration,
           restDuration: intervalConfig.restDuration,
@@ -480,28 +480,6 @@ export default function MetronomeScreenSimple() {
     setCadence(newCadence);
     if (isPlaying) {
       MetronomeService.updateBpm(newCadence, stableHandleBeat);
-    }
-  };
-
-  const setPresetCadence = (newCadence) => {
-    setCadence(newCadence);
-    if (isPlaying) {
-      MetronomeService.updateBpm(newCadence, stableHandleBeat);
-    }
-  };
-
-  const updateVolume = (newVolume) => {
-    setVolume(newVolume);
-    if (isPlaying) {
-      if (duckBaseVolume.current != null) {
-        // Currently ducked under a voice cue: update the restore target so we
-        // don't stomp the user's new setting when speech ends. Keep the click
-        // ducked live at 30% of the new value.
-        duckBaseVolume.current = newVolume;
-        MetronomeService.setVolume(newVolume * 0.3);
-      } else {
-        MetronomeService.setVolume(newVolume);
-      }
     }
   };
 

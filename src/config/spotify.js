@@ -8,7 +8,7 @@ try {
     scheme: 'com.strdr.app',
     path: 'spotify-auth',
   });
-} catch (e) {
+} catch (_e) {
   // Fallback to manual URI
 }
 

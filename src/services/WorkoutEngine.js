@@ -666,7 +666,7 @@ export class WorkoutEngine {
         if (this.callbacks.onCoachingCue) {
           try {
             this.callbacks.onCoachingCue(c.cue.message, c.cue.type);
-          } catch (error) {
+          } catch (_error) {
             // Coaching cue callback failed
           }
         }
@@ -708,7 +708,7 @@ export class WorkoutEngine {
     if (this.callbacks.onPhaseChange) {
       try {
         this.callbacks.onPhaseChange(phase, phaseIndex, this.currentWorkout.phases.length);
-      } catch (error) {
+      } catch (_error) {
         // Phase change callback failed
       }
     }
@@ -720,7 +720,7 @@ export class WorkoutEngine {
     if (this.callbacks.onCadenceChange && shouldCallCadenceChange) {
       try {
         this.callbacks.onCadenceChange(adjustedCadence, phase.cadence);
-      } catch (error) {
+      } catch (_error) {
         // Cadence change callback failed
       }
     }
@@ -751,7 +751,7 @@ export class WorkoutEngine {
         if (this.isActive && !this.isPaused && this.callbacks.onCoachingCue) {
           try {
             this.callbacks.onCoachingCue(cue.message, cue.type);
-          } catch (error) {
+          } catch (_error) {
             // Coaching cue callback failed
           }
         }
@@ -781,7 +781,7 @@ export class WorkoutEngine {
       }
       
       return 0;
-    } catch (error) {
+    } catch (_error) {
       return 0;
     }
   }

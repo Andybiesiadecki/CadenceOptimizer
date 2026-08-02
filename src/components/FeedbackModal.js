@@ -59,7 +59,7 @@ export default function FeedbackModal({ visible, onClose }) {
       setMessage('');
       Alert.alert('Thanks!', 'Your feedback has been saved.');
       onClose();
-    } catch (error) {
+    } catch (_error) {
       Alert.alert('Error', 'Could not save feedback. Please try again.');
     } finally {
       setSubmitting(false);

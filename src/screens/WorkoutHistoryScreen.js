@@ -1,8 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { getWorkoutHistory } from '../utils/storage';
-import { getRunnerProfile } from '../utils/storage';
+import { getWorkoutHistory, getRunnerProfile } from '../utils/storage';
 import PostWorkoutSummary from '../components/PostWorkoutSummary';
 
 function formatDuration(seconds) {

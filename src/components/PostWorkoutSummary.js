@@ -9,11 +9,8 @@ import {
   Modal,
   TouchableOpacity,
   ScrollView,
-  Dimensions,
 } from 'react-native';
 import MapView, { Polyline, Marker } from 'react-native-maps';
-
-const { width } = Dimensions.get('window');
 
 function formatPace(totalSeconds) {
   if (!totalSeconds || totalSeconds <= 0) return '--:--';

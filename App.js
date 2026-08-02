@@ -2,10 +2,8 @@ import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
-import { Text } from 'react-native';
 
 import HomeScreen from './src/screens/HomeScreen';
-import AnalysisScreen from './src/screens/AnalysisScreen';
 import MetronomeScreen from './src/screens/MetronomeScreen';
 import TargetsScreen from './src/screens/TargetsScreen';
 import RunnerProfileSetup from './src/screens/RunnerProfileSetup';

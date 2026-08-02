@@ -141,12 +141,10 @@ class RouteTracker {
     let splitDistance = 0;
     let splitStartIndex = 0;
     let splitNumber = 1;
-    let cumulativeDistance = 0;
 
     for (let i = 1; i < this.points.length; i++) {
       const segDist = this._distanceBetween(this.points[i - 1], this.points[i]);
       splitDistance += segDist;
-      cumulativeDistance += segDist;
 
       if (splitDistance >= unitMeters) {
         const splitPoints = this.points.slice(splitStartIndex, i + 1);

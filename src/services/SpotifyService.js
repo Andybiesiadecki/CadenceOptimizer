@@ -181,10 +181,10 @@ class SpotifyService {
         const text = await response.text();
         try {
           body = JSON.parse(text);
-        } catch (e) {
+        } catch (_e) {
           body = text;
         }
-      } catch (e) {
+      } catch (_e) {
         // unreadable body; fall through with null
       }
 
@@ -239,7 +239,7 @@ class SpotifyService {
           `${SPOTIFY_CONFIG.endpoints.api}/me/top/tracks?limit=50&time_range=${range}`
         );
         for (const t of data?.items || []) addTrack(t);
-      } catch (e) {
+      } catch (_e) {
         // scope/endpoint may be unavailable; keep going
       }
     }
@@ -251,7 +251,7 @@ class SpotifyService {
           `${SPOTIFY_CONFIG.endpoints.api}/me/tracks?limit=50`
         );
         for (const item of data?.items || []) addTrack(item?.track);
-      } catch (e) {
+      } catch (_e) {
         // ignore
       }
     }
@@ -281,7 +281,7 @@ class SpotifyService {
             tempoById.set(match[1], feat.tempo);
           }
         }
-      } catch (e) {
+      } catch (_e) {
         // skip this batch; partial results are still useful
       }
     }

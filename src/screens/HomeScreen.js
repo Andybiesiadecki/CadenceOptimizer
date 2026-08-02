@@ -1,17 +1,14 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Animated } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { getRunnerProfile } from '../utils/storage';
 import analytics from '../services/AnalyticsService';
-
-const { width } = Dimensions.get('window');
 
 export default function HomeScreen({ navigation }) {
   const [hasProfile, setHasProfile] = useState(false);
   const [profile, setProfile] = useState(null);
 
-  const insets = useSafeAreaInsets();
   const scrollY = useRef(new Animated.Value(0)).current;
 
   // Snappy collapse — completes over ~60px of scroll

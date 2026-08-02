@@ -8,6 +8,8 @@
 // -> expo-location) are only used in workout *generation* / terrain
 // adjustment, so they are stubbed; timing logic under test is untouched.
 
+import { WorkoutEngine } from '../WorkoutEngine';
+
 jest.mock('../../utils/storage', () => ({
   getRunnerProfile: jest.fn(async () => ({})),
 }));
@@ -16,8 +18,6 @@ jest.mock('../TerrainDetector', () => ({
   __esModule: true,
   default: { currentTerrain: null },
 }));
-
-import { WorkoutEngine } from '../WorkoutEngine';
 
 const TICK_MS = 250; // must match WORKOUT_TICK_MS in WorkoutEngine.js
 
