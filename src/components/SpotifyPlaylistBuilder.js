@@ -37,6 +37,9 @@ export default function SpotifyPlaylistBuilder({ visible, onClose, targetCadence
     if (visible) {
       checkConnection();
     }
+    // Deliberately re-runs only when the modal opens; checkConnection is a
+    // plain function (stable service calls), not a reactive dependency.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
   const checkConnection = async () => {
@@ -64,7 +67,7 @@ export default function SpotifyPlaylistBuilder({ visible, onClose, targetCadence
       if (success && SpotifyService.userProfile) {
         setUserName(SpotifyService.userProfile.display_name || '');
       }
-    } catch (error) {
+    } catch (_error) {
       if (SpotifyService.isNotAllowlisted()) {
         onNotAllowlisted?.();
         return;
@@ -87,7 +90,7 @@ export default function SpotifyPlaylistBuilder({ visible, onClose, targetCadence
         return;
       }
       setSearchResults(results);
-    } catch (error) {
+    } catch (_error) {
       if (SpotifyService.isNotAllowlisted()) {
         onNotAllowlisted?.();
         return;
@@ -119,13 +122,13 @@ export default function SpotifyPlaylistBuilder({ visible, onClose, targetCadence
     try {
       const name = `STRDR ${targetCadence} BPM`;
       const uris = playlist.map(t => t.uri);
-      const created = await SpotifyService.createPlaylist(name, uris);
+      await SpotifyService.createPlaylist(name, uris);
       Alert.alert(
         'Playlist Saved!',
         `"${name}" with ${playlist.length} tracks has been saved to your Spotify.`,
         [{ text: 'OK', onPress: onClose }]
       );
-    } catch (error) {
+    } catch (_error) {
       Alert.alert('Save Error', 'Could not save playlist. Try again.');
     } finally {
       setSaving(false);

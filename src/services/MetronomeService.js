@@ -37,7 +37,7 @@ export class MetronomeService {
           iosOptions: ['mixWithOthers'],
         });
         AudioManager.setAudioSessionActivity(true);
-      } catch (e) {
+      } catch (_e) {
         // Non-iOS or unavailable — safe to ignore.
       }
 

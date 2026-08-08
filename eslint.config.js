@@ -13,6 +13,11 @@ module.exports = defineConfig([
       // intended copy, not HTML-escaping mistakes. All 9 initial "errors" were
       // this rule firing on legit UI text.
       'react/no-unescaped-entities': 'off',
+      // Intentional pattern in this codebase: services export `class X` (named,
+      // for tests) plus `export default new X()` (singleton), and consumers
+      // import the default as `X`. Every hit was this deliberate shape, not the
+      // accidental default-vs-named mixup the rule exists to catch.
+      'import/no-named-as-default': 'off',
     },
   },
   {

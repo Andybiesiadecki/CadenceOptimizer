@@ -104,7 +104,7 @@ class AnalyticsService {
       }
       
       await AsyncStorage.setItem('analytics_events', JSON.stringify(events));
-    } catch (error) {
+    } catch (_error) {
       // Storage error - silently ignore
     }
   }
@@ -155,7 +155,7 @@ class AnalyticsService {
       const AsyncStorage = require('@react-native-async-storage/async-storage').default;
       const events = await AsyncStorage.getItem('analytics_events');
       return events ? JSON.parse(events) : [];
-    } catch (error) {
+    } catch (_error) {
       return [];
     }
   }

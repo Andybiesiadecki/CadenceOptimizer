@@ -62,7 +62,7 @@ export default function TargetsScreen() {
       if (savedProfile?.units) {
         setUnits(savedProfile.units);
       }
-    } catch (error) {
+    } catch (_error) {
       // No profile found, using defaults
     }
   };

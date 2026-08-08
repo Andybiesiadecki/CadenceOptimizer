@@ -7,6 +7,10 @@
 // RN-coupled imports (expo-auth-session, expo-web-browser, AsyncStorage) are
 // mocked; the logic under test is plain fetch + state.
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as AuthSession from 'expo-auth-session';
+import SpotifyService, { isDevModeRejection } from '../SpotifyService';
+
 jest.mock('@react-native-async-storage/async-storage', () => ({
   __esModule: true,
   default: {
@@ -25,10 +29,6 @@ jest.mock('expo-auth-session', () => ({
   ResponseType: { Code: 'code' },
   AuthRequest: jest.fn(),
 }));
-
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as AuthSession from 'expo-auth-session';
-import SpotifyService, { isDevModeRejection } from '../SpotifyService';
 
 const DEV_MODE_MESSAGE = 'User not registered in the Developer Dashboard';
 

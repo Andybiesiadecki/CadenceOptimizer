@@ -81,7 +81,7 @@ export class CoachingVoiceService {
           this.voice = enVoice.identifier;
         }
       }
-    } catch (error) {
+    } catch (_error) {
       // Could not get available voices, using default
     }
   }

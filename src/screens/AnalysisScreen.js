@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Platform } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
 import { FitFileParser } from '../services/FitFileParser';
 import { CadenceAnalyzer } from '../services/CadenceAnalyzer';
 import { saveAnalysis, getRunnerProfile } from '../utils/storage';

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput } from 'react-native';
 import { saveRunnerProfile } from '../utils/storage';
-import { webAlert, showSuccess, showError } from '../utils/webAlert';
+import { showSuccess, showError } from '../utils/webAlert';
 import TimePickerField from '../components/TimePickerField';
 import analytics from '../services/AnalyticsService';
 

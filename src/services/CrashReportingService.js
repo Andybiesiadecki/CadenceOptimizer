@@ -26,7 +26,7 @@ class CrashReportingService {
           }
         });
       }
-    } catch (e) {
+    } catch (_e) {
       // ErrorUtils not available
     }
 
@@ -46,7 +46,7 @@ class CrashReportingService {
       const existing = await this.getReports();
       const updated = [report, ...existing].slice(0, MAX_REPORTS);
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    } catch (e) {
+    } catch (_e) {
       // Can't do much if crash reporting itself fails
     }
   }
