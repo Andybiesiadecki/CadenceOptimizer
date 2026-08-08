@@ -22,8 +22,6 @@
         "NSLocationAlwaysAndWhenInUseUsageDescription": "STRDR uses your location for terrain detection and GPS-based cadence adjustments during runs.",
         "NSMicrophoneUsageDescription": "STRDR needs audio access for metronome functionality and voice coaching.",
         "NSMotionUsageDescription": "STRDR uses motion sensors to detect running cadence and provide real-time feedback.",
-        "NSHealthShareUsageDescription": "STRDR can integrate with HealthKit to provide comprehensive running analytics.",
-        "NSHealthUpdateUsageDescription": "STRDR can save your running data to HealthKit for comprehensive health tracking.",
         "UIBackgroundModes": [
           "audio",
           "location"
