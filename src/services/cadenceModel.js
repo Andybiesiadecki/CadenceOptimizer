@@ -150,6 +150,22 @@ export function getCadenceBands(profile) {
   };
 }
 
+// FORGE-006 — Quick Start: lets a fresh install hear the metronome BEFORE any
+// profile exists. 172 SPM is the stock default: mid-range of recreational-
+// runner guidance and inside every experience band above. Lives here (not in
+// the screen) so the metronome default stays part of the single source of truth.
+export const QUICK_START_CADENCE = 172;
+
+/**
+ * Cadence for a Quick Start session. Quick start normally runs pre-profile,
+ * but if a profile exists, prefer the personalized base over the stock default.
+ * @param {Object|null} [profile] - Runner profile, or null/undefined pre-onboarding
+ * @returns {number} Cadence in SPM
+ */
+export function getQuickStartCadence(profile = null) {
+  return profile ? getBaseCadence(profile) : QUICK_START_CADENCE;
+}
+
 // ---------------------------------------------------------------------------
 // F6 — distance-aware cadence.
 //

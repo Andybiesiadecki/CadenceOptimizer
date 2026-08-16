@@ -5,7 +5,7 @@ import { showSuccess, showError } from '../utils/webAlert';
 import TimePickerField from '../components/TimePickerField';
 import analytics from '../services/AnalyticsService';
 
-export default function RunnerProfileSetup({ navigation, onComplete }) {
+export default function RunnerProfileSetup({ navigation, onComplete, route }) {
   const [currentStep, setCurrentStep] = useState(1);
   const [profile, setProfile] = useState({
     // Basic Demographics
@@ -216,6 +216,9 @@ export default function RunnerProfileSetup({ navigation, onComplete }) {
 
       // Funnel: did the tester actually finish setup, and how complete is it?
       analytics.track('onboarding_completed', {
+        // FORGE-006: which door they came through — value-first quick start vs
+        // the classic home CTA — so we can measure which converts better.
+        source: route?.params?.source || 'home',
         experience: profileData.experience,
         raceTimesEntered: Object.values(profile.recentRaceTimes || {}).filter(Boolean).length,
         hasComfortablePace: !!profile.comfortablePace,

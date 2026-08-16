@@ -11,6 +11,8 @@ import {
   getBaseCadence,
   getTargetCadence,
   getCadenceBands,
+  QUICK_START_CADENCE,
+  getQuickStartCadence,
   parseTimeToMin,
   predictPaceForDistance,
   getCadenceForDistance,
@@ -107,6 +109,21 @@ describe('getBaseCadence', () => {
   test('an out-of-range currentCadence is ignored, formula used', () => {
     expect(getBaseCadence({ currentCadence: '140' })).toBe(170); // 140 < 150
     expect(getBaseCadence({ currentCadence: '220' })).toBe(170); // 220 > 200
+  });
+});
+
+describe('getQuickStartCadence (FORGE-006)', () => {
+  test('no profile (fresh install) -> stock 172 default', () => {
+    expect(getQuickStartCadence()).toBe(QUICK_START_CADENCE);
+    expect(getQuickStartCadence(null)).toBe(172);
+  });
+  test('with a profile, prefers the personalized base over the stock default', () => {
+    const profile = { height: 165, experience: 'advanced', age: 25, weight: 60 };
+    expect(getQuickStartCadence(profile)).toBe(getBaseCadence(profile)); // 174, not 172
+  });
+  test('stock default sits inside the metronome-adjustable range', () => {
+    expect(QUICK_START_CADENCE).toBeGreaterThanOrEqual(120);
+    expect(QUICK_START_CADENCE).toBeLessThanOrEqual(200);
   });
 });
 

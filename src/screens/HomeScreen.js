@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { getRunnerProfile } from '../utils/storage';
 import analytics from '../services/AnalyticsService';
+import { QUICK_START_CADENCE } from '../services/cadenceModel';
 
 export default function HomeScreen({ navigation }) {
   const [hasProfile, setHasProfile] = useState(false);
@@ -139,12 +140,26 @@ export default function HomeScreen({ navigation }) {
             style={styles.setupButton}
             onPress={() => {
               analytics.trackUserAction('navigation', { destination: 'Profile', source: 'onboarding' });
-              navigation.navigate('Profile');
+              navigation.navigate('Profile', { source: 'home' });
             }}
             activeOpacity={0.8}
           >
             <Text style={styles.setupButtonText}>SET UP YOUR PROFILE</Text>
             <Text style={styles.setupButtonArrow}>→</Text>
+          </TouchableOpacity>
+
+          {/* FORGE-006: value-first entry — hear the metronome BEFORE onboarding.
+              No profile required; quickStart param auto-starts at the stock default. */}
+          <TouchableOpacity
+            style={styles.quickStartButton}
+            onPress={() => {
+              analytics.track('quick_start_used');
+              navigation.navigate('Metronome', { quickStart: true });
+            }}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.quickStartButtonText}>TRY THE METRONOME</Text>
+            <Text style={styles.quickStartButtonSub}>Quick start — {QUICK_START_CADENCE} SPM</Text>
           </TouchableOpacity>
 
           <View style={styles.featurePreview}>
@@ -243,7 +258,7 @@ export default function HomeScreen({ navigation }) {
             description="Personalize STRDR with your running metrics and goals"
             onPress={() => {
               analytics.trackUserAction('navigation', { destination: 'Profile', source: 'home_profile_setup' });
-              navigation.navigate('Profile');
+              navigation.navigate('Profile', { source: 'home' });
             }}
             style={styles.profileCard}
           />
@@ -252,7 +267,7 @@ export default function HomeScreen({ navigation }) {
             style={styles.profileCompleteCard}
             onPress={() => {
               analytics.trackUserAction('navigation', { destination: 'Profile', source: 'home_profile_complete' });
-              navigation.navigate('Profile');
+              navigation.navigate('Profile', { source: 'home' });
             }}
             activeOpacity={0.8}
           >
@@ -560,7 +575,7 @@ const styles = StyleSheet.create({
     borderRadius: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 40,
+    marginBottom: 16, // was 40 — quickStartButton now sits directly below (FORGE-006)
   },
   setupButtonText: {
     color: '#FFF',
@@ -575,6 +590,32 @@ const styles = StyleSheet.create({
     fontFamily: 'Archivo_800ExtraBold',
     fontWeight: '800',
     marginLeft: 12,
+  },
+  quickStartButton: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 24,
+    paddingVertical: 16,
+    borderRadius: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 40,
+    borderWidth: 1,
+    borderColor: '#0A0A0A',
+  },
+  quickStartButtonText: {
+    color: '#0A0A0A',
+    fontSize: 15,
+    fontFamily: 'Archivo_800ExtraBold',
+    fontWeight: '800',
+    letterSpacing: 1.5,
+  },
+  quickStartButtonSub: {
+    color: '#6B6B6B',
+    fontSize: 12,
+    fontFamily: 'Archivo_400Regular',
+    fontWeight: '400',
+    marginTop: 4,
+    letterSpacing: 0.5,
   },
   featurePreview: {
     paddingHorizontal: 24,
