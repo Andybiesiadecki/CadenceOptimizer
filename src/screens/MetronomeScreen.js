@@ -12,8 +12,9 @@ import RouteTracker from '../services/RouteTracker';
 import PostWorkoutSummary from '../components/PostWorkoutSummary';
 import SpotifyPlaylistBuilder from '../components/SpotifyPlaylistBuilder';
 import { getRunnerProfile, saveWorkoutToHistory } from '../utils/storage';
+import { getQuickStartCadence } from '../services/cadenceModel';
 
-export default function MetronomeScreenSimple() {
+export default function MetronomeScreenSimple({ navigation, route }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [cadence, setCadence] = useState(170);
   const [currentBeat, setCurrentBeat] = useState(0);
@@ -67,7 +68,15 @@ export default function MetronomeScreenSimple() {
   // When that happens we hide the entry point for the session (session-only
   // by design — allowlist status can change server-side at any time).
   const [spotifyUnavailable, setSpotifyUnavailable] = useState(false);
-  
+
+  // FORGE-006: Quick Start (pre-profile entry from HomeScreen).
+  // quickStartSessionRef marks that this session began via Quick Start;
+  // personalizePromptShownRef enforces the once-per-session cap on the
+  // post-session "set up your profile" nudge (inline, never a blocking modal).
+  const quickStartSessionRef = useRef(false);
+  const personalizePromptShownRef = useRef(false);
+  const [showPersonalizePrompt, setShowPersonalizePrompt] = useState(false);
+
   // Interval mode states
   const [intervalConfig, setIntervalConfig] = useState({
     workDuration: 240, // 4 minutes
@@ -341,14 +350,17 @@ export default function MetronomeScreenSimple() {
     });
   };
 
-  // Actually start the metronome and workout with optional feeling modifier
-  const startWorkout = async (modifier = null) => {
+  // Actually start the metronome and workout with optional feeling modifier.
+  // `overrides` ({ cadence, mode }) lets programmatic starts (Quick Start)
+  // bypass state that hasn't committed yet in the same render.
+  const startWorkout = async (modifier = null, overrides = {}) => {
     try {
+      const activeMode = overrides.mode ?? mode;
       const cadenceOffset = modifier?.cadenceOffset || 0;
-      const adjustedCadence = cadence + cadenceOffset;
-      
+      const adjustedCadence = (overrides.cadence ?? cadence) + cadenceOffset;
+
       analytics.trackFeatureUsage('metronome', 'workout_started', {
-        mode: mode,
+        mode: activeMode,
         cadence: adjustedCadence,
         feeling: modifier?.key || 'skipped',
         audioEnabled: audioEnabled,
@@ -371,8 +383,8 @@ export default function MetronomeScreenSimple() {
       setIsPlaying(true);
       setCadence(adjustedCadence);
       await MetronomeService.start(adjustedCadence, stableHandleBeat, volume, audioEnabled);
-      
-      if (mode === 'fartlek') {
+
+      if (activeMode === 'fartlek') {
         await WorkoutEngine.startFartlek({
           baseCadence: adjustedCadence,
           difficulty: fartlekDifficulty,
@@ -382,7 +394,7 @@ export default function MetronomeScreenSimple() {
         setWorkoutStatus(WorkoutEngine.getStatus());
       }
       
-      if (mode === 'interval') {
+      if (activeMode === 'interval') {
         await WorkoutEngine.startInterval({
           workDuration: intervalConfig.workDuration,
           restDuration: intervalConfig.restDuration,
@@ -397,6 +409,34 @@ export default function MetronomeScreenSimple() {
     } catch (error) {
       console.error('Metronome error:', error);
     }
+  };
+
+  // FORGE-006: Quick Start entry — auto-start the plain metronome at the stock
+  // default cadence, zero profile required. One-shot: the param is consumed
+  // immediately so re-focusing the tab never restarts audio.
+  useEffect(() => {
+    if (!route?.params?.quickStart) return;
+    navigation?.setParams({ quickStart: undefined });
+    if (isPlayingRef.current || workoutActive) return; // never stomp a live session
+    quickStartSessionRef.current = true;
+    const qsCadence = getQuickStartCadence();
+    setCadence(qsCadence);
+    setMode('none'); // stock settings: plain metronome, no workout engine
+    startWorkout(null, { cadence: qsCadence, mode: 'none' });
+    // Deliberately keyed to the quickStart param only; startWorkout/workoutActive
+    // are read at fire time and must not re-trigger an audio start.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [route?.params?.quickStart]);
+
+  // FORGE-006: after a quick-start session ends, nudge toward profile setup —
+  // inline (non-blocking) and at most ONCE per session, only while no profile
+  // exists. Post-profile sessions never see it.
+  const maybeShowPersonalizePrompt = async () => {
+    if (!quickStartSessionRef.current || personalizePromptShownRef.current) return;
+    const profile = await getRunnerProfile();
+    if (profile) return; // already personalized — nothing to pitch
+    personalizePromptShownRef.current = true;
+    setShowPersonalizePrompt(true);
   };
 
   const handleCheckInSelect = (option) => {
@@ -416,6 +456,7 @@ export default function MetronomeScreenSimple() {
       WorkoutEngine.pauseWorkout();
       setIsPlaying(false);
       // Don't reset workoutStatus — keep the progress visible
+      maybeShowPersonalizePrompt(); // FORGE-006: they stopped — quick-start nudge (once)
     } else if (workoutActive) {
       // RESUME — pick up where we left off
       setIsPlaying(true);
@@ -473,6 +514,7 @@ export default function MetronomeScreenSimple() {
     setWorkoutSummary(summary);
     setShowSummary(true);
     setWorkoutStatus({ active: false });
+    maybeShowPersonalizePrompt(); // FORGE-006: session over — quick-start nudge (once)
   };
 
   const adjustCadence = (change) => {
@@ -559,6 +601,22 @@ export default function MetronomeScreenSimple() {
             onPress={endWorkout}
           >
             <Text style={styles.endWorkoutButtonText}>END WORKOUT</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* FORGE-006: post-quick-start personalize nudge — inline, once per session */}
+        {showPersonalizePrompt && (
+          <TouchableOpacity
+            style={styles.personalizePrompt}
+            onPress={() => {
+              setShowPersonalizePrompt(false);
+              analytics.trackUserAction('navigation', { destination: 'Profile', source: 'quick_start_prompt' });
+              navigation?.navigate('Profile', { source: 'quick_start_prompt' });
+            }}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.personalizePromptTitle}>PERSONALIZE YOUR CADENCE</Text>
+            <Text style={styles.personalizePromptDesc}>Set up your profile (2 min) →</Text>
           </TouchableOpacity>
         )}
 
@@ -975,6 +1033,27 @@ const styles = StyleSheet.create({
     fontSize: 15,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
+  },
+  personalizePrompt: {
+    backgroundColor: '#F4F4F4',
+    padding: 20,
+    marginBottom: 24,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#0A0A0A',
+    borderLeftWidth: 4,
+  },
+  personalizePromptTitle: {
+    fontFamily: 'Archivo_800ExtraBold',
+    fontSize: 14,
+    color: '#0A0A0A',
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  personalizePromptDesc: {
+    fontFamily: 'Archivo_400Regular',
+    fontSize: 13,
+    color: '#6B6B6B',
   },
   audioControls: {
     backgroundColor: '#FFFFFF',
